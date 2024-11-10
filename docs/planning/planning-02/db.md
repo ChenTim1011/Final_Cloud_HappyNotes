@@ -1,6 +1,6 @@
 ### 使用 NoSQL 的小組，也請去研究使用該種資料庫的 best practices<br>
 #### best practices參考資料 : https://www.mongodb.com/developer/products/mongodb/mongodb-schema-design-best-practices/<br>
-  1. **MongoDB Schema 設計的重要性**：良好的 Schema 設計對於 MongoDB 數據庫的擴展性、效能和成本控制至關重要。MongoDB 的 Schema 設計與傳統關聯式資料庫不同，它強調根據應用需求設計 Schema，而非遵循固定的正規化模式。
+  1. **MongoDB Schema 設計的重要性**：良好的 Schema 設計對於 MongoDB 資料庫的擴展性、效能和成本控制至關重要。MongoDB 的 Schema 設計與傳統關聯式資料庫不同，它強調根據應用需求設計 Schema，而非遵循固定的正規化模式。
   2. **嵌入 (Embedding) vs. 引用 (Referencing)**：
       - **嵌入**：適用於需要快速讀取、資料不會無限制增長的情況，可以在一個文件中取得所有相關資料，避免使用 `$lookup`。
       - **引用**：適合需要獨立查詢子文件、子文件數量可能過多的情境，使用 `$lookup` 操作類似於 SQL 的 JOIN。
@@ -22,19 +22,24 @@
 ```json
 // User Collection
 {
-    _id: ObjectId,
-    userName: String,
-    userPassword: String,
-    email: String,
-    whiteboards: [ObjectId], // 引用到 Whiteboard 的 _id
+    userName: { type: String, required: true },
+    userPassword: { type: String, required: true },
+    email: { type: String, required: true },
+    whiteboards: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Whiteboard' }],
     activityLog: [
         {
-            logId: ObjectId,
-            action: String, // (e.g., "new", "delete", "edit")
-            timestamp: Date,
-            entityType: String, // (e.g., "card", "board")
-            entityId: ObjectId, // 對應的卡片或白板 ID
-            detail: String
+            logId: { type: mongoose.Schema.Types.ObjectId },
+            action: { type: String }, // e.g., "new", "delete", "edit"
+            timestamp: { type: Date, default: Date.now },
+            entityType: { type: String }, // e.g., "card", "board"
+            entityId: { type: mongoose.Schema.Types.ObjectId },
+            detail: { type: String }
+        }
+    ],
+    tags: [
+        {
+            tagName: { type: String },
+            cardIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Card' }]
         }
     ]
 }
@@ -44,9 +49,6 @@
 {
   whiteboardTitle: { type: String, default: "New Whiteboard" },
   isPrivate: { type: Boolean, default: false },
-  userId: { type: String, required: true },
-  //TODO: userId: mongoose.Schema.Types.ObjectId,
-  // reference to the User 's _id but we dont have User model yet,so we use String temporarily.
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   position: {
@@ -89,20 +91,20 @@
     connection: [
         {
             toNoteId: mongoose.Schema.Types.ObjectId,
-            position: Number, // 0:上, 1:右, 2:下, 3:左
+            position: Number, // 0:up, 1:right, 2:down, 3:left
         },
     ],
     connectionBy: [
         {
             toNoteId: mongoose.Schema.Types.ObjectId,
-            position: Number, // 0:上, 1:右, 2:下, 3:左
+            position: Number, // 0:up, 1:right, 2:down, 3:left
         },
     ],
 }
 ```
 #### 設計說明
 
-1. **User 集合**：包含使用者基本資料（名稱、密碼、email）以及活動日誌。活動日誌記錄了使用者對不同實體（如卡片、白板）的操作。
+1. **User 集合**：包含使用者基本資料（名稱、密碼、email）以及活動紀錄。活動紀錄記錄了使用者對不同實體（如卡片、白板）的操作。
 2. **WhiteBoard 集合**：代表白板的集合。`is_private` 表示白板的隱私狀態。`position` 用於設置白板的位置（x, y 座標）。每個白板可以有多張卡片，因此使用 `cards` 陣列引用卡片的 `_id`。
 3. **Card 集合**：卡片為最小的單位，包含標題、內容、建立及更新時間、到期日期、標籤、摺疊狀態、位置（x, y 座標），以及卡片的長度和寬度。`comments` 嵌入在卡片裡面
 4. **多對多關係**：白板與卡片之間為多對多關係，每個白板可以包含多張卡片，每張卡片也可同時存在於多個白板中，透過 `cards` 陣列的引用實現。
@@ -135,6 +137,6 @@
 
 - 每個白板和卡片都設置了 `position`（x, y 座標），這是因為這些物件需要在視覺化介面上進行位置管理。將位置資料保存在文件中，方便在白板上動態調整每個卡片的擺放和顯示。同時，位置資料的結構化存放可以在查詢或排序時更高效地獲取，適合用於地圖或白板應用中的視覺定位。
 
-#### 5. **活動日誌的嵌入**
+#### 5. **活動紀錄的嵌入**
 
 - 在 `User` 文件中，我們使用嵌入的方式將 `activity_log` 記錄進來，這樣的設計是基於 MongoDB 單一文檔的 ACID 特性。這使得所有的活動記錄（例如卡片的建立、更新等）可以作為一個原子操作來保存，確保資料一致性，也方便查看每個使用者的完整操作歷史。
