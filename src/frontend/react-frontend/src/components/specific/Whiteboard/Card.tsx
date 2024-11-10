@@ -32,6 +32,7 @@ const Card: React.FC<CardProps> = ({
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [editedTitle, setEditedTitle] = useState<string>(cardTitle);
     const [editedContent, setEditedContent] = useState<string>(content);
+    const [isFolded, setIsFolded] = useState<boolean>(!!foldOrNot);
 
     // Function to save edited content and update the card
     const handleSave = () => {
@@ -55,6 +56,12 @@ const Card: React.FC<CardProps> = ({
             onDelete(_id);
         }
     };
+    const handleToggleFold = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent triggering onSelect
+        setIsFolded(!isFolded);
+        onUpdateCard(_id, { foldOrNot: !isFolded }); // 更新後端的 foldOrNot 狀態
+    };
+
 
     return (
         <div
@@ -66,11 +73,23 @@ const Card: React.FC<CardProps> = ({
                 top: position.y,
                 left: position.x,
                 width: dimensions.width,
-                height: dimensions.height,
+                height: isFolded ? 'auto' : dimensions.height, // 折疊時高度自適應
+                overflow: 'hidden',
             }}
             onDoubleClick={() => setIsEditing(true)}
             onClick={() => onSelect(_id)} 
         >
+             {/* Fold button */}
+             <button
+                onClick={handleToggleFold}
+                className="absolute top-0 left-2  text-gray-500 hover:text-gray-700 focus:outline-none"
+                style={{ fontSize: '1.25rem' }} 
+                title={isFolded ? '展開卡片' : '摺疊卡片'}
+            >
+                {isFolded ? '+' : '-'}
+            </button>
+
+
             {/** Delete button */}
             <button
                 onClick={handleDelete}
@@ -109,7 +128,7 @@ const Card: React.FC<CardProps> = ({
                 <>
                     {/** Display the card title and content */}
                     <h3 className="text-lg font-semibold">{cardTitle}</h3>
-                    <p className="mt-2">{content}</p>
+                    {!isFolded && <p className="mt-2">{content}</p>}
                 </>
             )}
         </div>

@@ -19,7 +19,7 @@
   5. **總結**：MongoDB Schema 設計應根據具體應用的資料存取模式來決定，不拘泥於正規化。利用嵌入與引用的搭配，可以設計出符合需求的高效能 Schema。<br>
 #### Schema設計:
 前端、後端以及資料庫的命名規則是 smallcamelcase <br>
-```json
+```js
 // User Collection
 {
     userName: { type: String, required: true },
@@ -44,7 +44,7 @@
     ]
 }
 ```
-```json
+```js
 // Whiteboard Collection
 {
   whiteboardTitle: { type: String, default: "New Whiteboard" },
@@ -69,7 +69,7 @@
   ], // reference to Card's _id , to store the many-to-many relation about cards.
 }
 ```
-```json
+```js
 // Card Collection
 {
     cardTitle: { type: String, default: "New Card" },
