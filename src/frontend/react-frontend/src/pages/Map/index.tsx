@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
 import { getAllWhiteboards, createWhiteboard, deleteWhiteboardById } from '@/services/whiteboardService';
 
+
 const Map: React.FC = () => {
     const navigate = useNavigate();
     const [whiteboards, setWhiteboards] = useState<WhiteboardData[]>([]);
