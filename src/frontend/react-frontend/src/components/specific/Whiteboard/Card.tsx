@@ -1,7 +1,8 @@
 // react-frontend/src/components/specific/Whiteboard/Card.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CardData } from '@/interfaces/Card/CardData';
+import debounce from 'lodash/debounce';
 
 // Interface for Card component props extending CardData
 interface CardProps extends CardData {
@@ -33,12 +34,24 @@ const Card: React.FC<CardProps> = ({
     const [editedTitle, setEditedTitle] = useState<string>(cardTitle);
     const [editedContent, setEditedContent] = useState<string>(content);
     const [isFolded, setIsFolded] = useState<boolean>(!!foldOrNot);
+    const cardRef = useRef<HTMLDivElement>(null);
+
+    // debounce function to adjust card height after content change
+    const adjustHeight = useCallback(debounce(() => {
+        if (cardRef.current) {
+            const newHeight = cardRef.current.scrollHeight;
+            if (newHeight !== dimensions.height) {
+                onUpdateCard(_id, { dimensions: { ...dimensions, height: newHeight } });
+            }
+        }
+    }, 300), [cardRef, dimensions, onUpdateCard, _id]);
 
     // Function to save edited content and update the card
     const handleSave = () => {
         if (_id) {
             onUpdateCard(_id, { cardTitle: editedTitle, content: editedContent, updatedAt: new Date() });
             setIsEditing(false);
+            adjustHeight();
         }
     };
 
@@ -59,13 +72,23 @@ const Card: React.FC<CardProps> = ({
     const handleToggleFold = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent triggering onSelect
         setIsFolded(!isFolded);
-        onUpdateCard(_id, { foldOrNot: !isFolded }); // 更新後端的 foldOrNot 狀態
+        onUpdateCard(_id, { foldOrNot: !isFolded }); // Update foldOrNot field
     };
 
+    
+    // Using useEffect to adjust card height after content change
+    useEffect(() => {
+        adjustHeight();
+    
+        // Cleanup debounce function
+        return () => {
+            adjustHeight.cancel();
+        };
+    }, [content, isFolded, adjustHeight]);
 
     return (
         <div
-            className={`bg-blue-100 border border-blue-300 p-4 rounded shadow relative cursor-pointer ${
+            className={`bg-blue-100 border border-blue-300 p-4 rounded shadow relative cursor-pointer transition-all duration-300 ${
                 isSelected ? 'ring-4 ring-blue-500' : ''
             }`}
             style={{
@@ -73,7 +96,7 @@ const Card: React.FC<CardProps> = ({
                 top: position.y,
                 left: position.x,
                 width: dimensions.width,
-                height: isFolded ? 'auto' : dimensions.height, // 折疊時高度自適應
+                height: isFolded ? 'auto' : 'auto', // remove fix height
                 overflow: 'hidden',
             }}
             onDoubleClick={() => setIsEditing(true)}
