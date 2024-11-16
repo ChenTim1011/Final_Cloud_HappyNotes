@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { CardData } from '@/interfaces/Card/CardData';
+import Tag from '@/components/specific/Card/tag';
 
 // Interface for Card component props extending CardData
 interface CardProps extends CardData {
@@ -61,7 +62,12 @@ const Card: React.FC<CardProps> = ({
         setIsFolded(!isFolded);
         onUpdateCard(_id, { foldOrNot: !isFolded }); // 更新後端的 foldOrNot 狀態
     };
-
+   // Method to handle tag updates
+   const handleTagUpdate = (newTag: string) => {
+        if (_id) {
+            onUpdateCard(_id, { tag: newTag });
+        }
+    };
 
     return (
         <div
@@ -131,6 +137,9 @@ const Card: React.FC<CardProps> = ({
                     {!isFolded && <p className="mt-2">{content}</p>}
                 </>
             )}
+
+             {/* Add Tag component */}
+             <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
         </div>
     );
 };
