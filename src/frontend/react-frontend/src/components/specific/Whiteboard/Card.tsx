@@ -35,6 +35,7 @@ const Card: React.FC<CardProps> = ({
     const [editedContent, setEditedContent] = useState<string>(content);
     const [isFolded, setIsFolded] = useState<boolean>(!!foldOrNot);
     const cardRef = useRef<HTMLDivElement>(null);
+    const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
     // debounce function to adjust card height after content change
     const adjustHeight = useCallback(debounce(() => {
@@ -71,10 +72,22 @@ const Card: React.FC<CardProps> = ({
     };
     const handleToggleFold = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent triggering onSelect
+        if (isEditing && !isFolded) setIsEditing(false); // Exit edit mode if folding
         setIsFolded(!isFolded);
         onUpdateCard(_id, { foldOrNot: !isFolded }); // Update foldOrNot field
     };
 
+    // Function to handle content change
+    const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setEditedContent(e.target.value);
+
+        if (textAreaRef.current) {
+            textAreaRef.current.style.height = 'auto'; // Reset height to auto
+            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
+            //Update card height
+            adjustHeight();
+        }
+    };
     
     // Using useEffect to adjust card height after content change
     useEffect(() => {
@@ -85,6 +98,15 @@ const Card: React.FC<CardProps> = ({
             adjustHeight.cancel();
         };
     }, [content, isFolded, adjustHeight]);
+
+    // Set textarea height to last saved card height on entering edit mode
+    useEffect(() => {
+        if (isEditing && textAreaRef.current) {
+            textAreaRef.current.style.height = 'auto'; // Reset height to auto before measuring
+            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
+            adjustHeight();
+        }
+    }, [isEditing, adjustHeight]);
 
     return (
         <div
@@ -134,10 +156,12 @@ const Card: React.FC<CardProps> = ({
                     />
                     {/** Textarea for editing the card content */}
                     <textarea
+                        ref={textAreaRef}
                         placeholder="Enter content here"
                         value={editedContent}
-                        onChange={(e) => setEditedContent(e.target.value)}
-                        className="w-full h-24 p-2 border rounded"
+                        onChange={handleContentChange}
+                        className="w-full h-24 p-2 border rounded resize-none"
+                        style={{ overflow: 'hidden' }}
                     />
                     {/** Button to save changes */}
                     <button
