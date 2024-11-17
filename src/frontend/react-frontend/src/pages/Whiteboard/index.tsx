@@ -17,10 +17,11 @@ const Whiteboard: React.FC = () => {
     const [contextMenu, setContextMenu] = useState<{
         x: number;
         y: number;
-        action?: 'add' | 'delete';
+        action?: 'add' | 'delete' | 'paste';
     } | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [copiedCard, setCopiedCard] = useState<CardData | null>(null); // 新增的狀態
 
     // Fetch whiteboard and associated cards data when the component mounts or id changes
     useEffect(() => {
@@ -56,8 +57,14 @@ const Whiteboard: React.FC = () => {
         fetchData();
     }, [id]);
 
+    // Function to handle copying a card
+    const handleCopyCard = (card: CardData) => {
+        setCopiedCard(card);
+        alert('卡片已複製，您可以在空白區域右鍵選擇貼上。');
+    };
+
     // Add a new card at the specified x and y coordinates
-    const addCard = async (x: number, y: number) => {
+    const addCard = async (x: number, y: number, cardData?: CardData) => {
         // Early return if whiteboard is not loaded or ID is undefined
         if (!whiteboard || !whiteboard._id) {
             console.error("Whiteboard is not loaded or ID is undefined");
@@ -65,17 +72,17 @@ const Whiteboard: React.FC = () => {
         }
 
         const newCardData: Omit<CardData, '_id'> = {
-            cardTitle: 'New Card',
-            content: 'New Note',
+            cardTitle: cardData ? `${cardData.cardTitle} ` : '新卡片',
+            content: cardData ? cardData.content : '新內容',
             createdAt: new Date(),
             updatedAt: new Date(),
-            dueDate: new Date(),
-            tag: '',
-            foldOrNot: false, 
+            dueDate: cardData && cardData.dueDate ? new Date(cardData.dueDate) : new Date(),
+            tag: cardData ? cardData.tag : '',
+            foldOrNot: cardData ? cardData.foldOrNot : false, 
             position: { x, y },
-            dimensions: { width: 200, height: 150 },
-            connection: [],
-            comments: [],
+            dimensions: cardData ? cardData.dimensions : { width: 200, height: 150 },
+            connection: cardData ? cardData.connection : [],
+            comments: cardData ? cardData.comments : [],
         };
 
         try {
@@ -160,7 +167,7 @@ const Whiteboard: React.FC = () => {
         setContextMenu({
             x: e.clientX,
             y: e.clientY,
-            action: cardId ? 'delete' : 'add',
+            action: cardId ? 'delete' : (copiedCard ? 'paste' : 'add'), // 根據是否有複製的卡片決定行動
         });
     };
 
@@ -203,10 +210,11 @@ const Whiteboard: React.FC = () => {
                     onDelete={deleteCardHandler}
                     isSelected={card._id === selectedCardId}
                     onSelect={handleSelectCard}
+                    onCopyCard={handleCopyCard} // 傳遞複製函數
                 />
             ))}
 
-            {/* Display the context menu for adding or deleting cards */}
+            {/* Display the context menu for adding, deleting, or pasting cards */}
             {contextMenu && (
                 <div
                     className="absolute bg-gray-800 text-white p-2 rounded z-50 cursor-pointer"
@@ -218,7 +226,19 @@ const Whiteboard: React.FC = () => {
                             className="py-1 px-2 hover:bg-gray-700"
                             onClick={() => addCard(contextMenu.x, contextMenu.y)}
                         >
-                            Add Card
+                            新增卡片
+                        </div>
+                    ) : contextMenu.action === 'paste' ? (
+                        <div
+                            className="py-1 px-2 hover:bg-gray-700"
+                            onClick={() => {
+                                if (copiedCard) {
+                                    addCard(contextMenu.x, contextMenu.y, copiedCard);
+                                    // setCopiedCard(null);
+                                }
+                            }}
+                        >
+                            複製卡片
                         </div>
                     ) : (
                         <div

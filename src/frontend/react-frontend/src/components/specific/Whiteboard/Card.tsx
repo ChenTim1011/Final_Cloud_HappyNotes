@@ -11,6 +11,7 @@ interface CardProps extends CardData {
     onDelete: (cardId: string) => void; 
     isSelected: boolean; 
     onSelect: (cardId: string) => void; 
+    onCopyCard: (card: CardData) => void; 
 }
 
 const Card: React.FC<CardProps> = React.memo(({ 
@@ -29,6 +30,7 @@ const Card: React.FC<CardProps> = React.memo(({
     onDelete, 
     isSelected, 
     onSelect, 
+    onCopyCard,
 }) => {
     // Local state for editing mode and input values
     const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -237,6 +239,34 @@ const Card: React.FC<CardProps> = React.memo(({
                     {isFolded ? '+' : '-'}
                 </button>
 
+                {/* Copy button */}
+                <button
+                    onClick={(e) => { 
+                        e.stopPropagation(); 
+                        onCopyCard({ 
+                            _id,
+                            cardTitle,
+                            content,
+                            dueDate,
+                            tag,
+                            foldOrNot,
+                            position,
+                            dimensions,
+                            connection,
+                            connectionBy,
+                            comments,
+                            createdAt: new Date(), // Add createdAt
+                            updatedAt: new Date(), // Add updatedAt
+                        }); 
+                    }}
+                    className="absolute top-0 left-8 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    style={{ fontSize: '1.25rem' }}
+                    title="複製卡片"
+                >
+                    📄
+                </button>
+
+
                 {/* Delete button */} 
                 <button
                     onClick={handleDelete}
@@ -275,13 +305,13 @@ const Card: React.FC<CardProps> = React.memo(({
                             onClick={handleSave}  
                             className="mt-2 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none self-end"  
                         >  
-                            Save  
+                            儲存 
                         </button>  
                     </div> 
                 ) : (  
                     <div className="flex flex-col"> 
-                        <h3 ref={titleRef} className="text-lg font-semibold drag-handle" style={{ transition: 'none' }}>{cardTitle}</h3>  
-                        {!isFolded && <p className="mt-2 whitespace-pre-wrap" style={{ transition: 'none' }}>{content}</p>}  
+                        <h3 ref={titleRef} className="text-lg font-semibold drag-handle" style={{ transition: 'none' , marginTop: '8px' }}>{cardTitle}</h3>  
+                        {!isFolded && <p className="mt-2 whitespace-pre-wrap" style={{ transition: 'none', marginTop: '8px' }}>{content}</p>}  
                     </div> 
                 )}  
             </div>  
