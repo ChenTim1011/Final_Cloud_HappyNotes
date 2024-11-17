@@ -45,11 +45,9 @@ const Card: React.FC<CardProps> = React.memo(({
     const adjustHeight = useCallback(() => {  
         if (cardRef.current && isEditing && !isFolded) {  
             const newHeight = Math.max(cardRef.current.scrollHeight, 100); 
-            const heightDifference = newHeight - prevHeightRef.current; 
 
-            console.log('Adjusting Height:', { newHeight, prevHeight: prevHeightRef.current, difference: heightDifference });
-
-            if (Math.abs(heightDifference) > 0 && !isAdjustingRef.current) { 
+            // Only update if newHeight is different from current dimensions.height
+            if (newHeight !== dimensions.height && !isAdjustingRef.current) { 
                 isAdjustingRef.current = true; // Prevent loop
                 onUpdateCard(_id, { dimensions: { width: dimensions.width, height: newHeight } }); 
                 prevHeightRef.current = newHeight; // Update previous height
@@ -60,7 +58,7 @@ const Card: React.FC<CardProps> = React.memo(({
                 }, 0);
             } 
         }  
-    }, [dimensions.width, onUpdateCard, _id, isEditing, isFolded]); 
+    }, [dimensions.width, dimensions.height, onUpdateCard, _id, isEditing, isFolded]); 
 
     // Function to save edited content and update the card  
     const handleSave = useCallback(() => {
@@ -99,20 +97,26 @@ const Card: React.FC<CardProps> = React.memo(({
                 // Folding: set height to title's height + padding/margin
                 if (titleRef.current) {  
                     const titleHeight = titleRef.current.offsetHeight + 32; // 16px padding top and bottom
-                    onUpdateCard(_id, { dimensions: { width: dimensions.width, height: titleHeight } });  
-                    prevHeightRef.current = titleHeight; // Update previous height
+                    // Only update if different
+                    if (titleHeight !== dimensions.height) {
+                        onUpdateCard(_id, { dimensions: { width: dimensions.width, height: titleHeight } });  
+                        prevHeightRef.current = titleHeight; // Update previous height
+                    }
                 }  
             } else {  
                 // Unfolding: set height based on content 
                 if (cardRef.current) {  
                     const fullHeight = cardRef.current.scrollHeight;  
-                    onUpdateCard(_id, { dimensions: { width: dimensions.width, height: fullHeight } });  
-                    prevHeightRef.current = fullHeight; // Update previous height
+                    // Only update if different
+                    if (fullHeight !== dimensions.height) {
+                        onUpdateCard(_id, { dimensions: { width: dimensions.width, height: fullHeight } });  
+                        prevHeightRef.current = fullHeight; // Update previous height
+                    }
                 }  
             }  
             return newFolded;  
         });  
-    }, [ onUpdateCard, _id, dimensions.width ]); 
+    }, [ onUpdateCard, _id, dimensions.width, dimensions.height ]); 
 
     // Function to handle content change
     const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -141,9 +145,10 @@ const Card: React.FC<CardProps> = React.memo(({
             const observer = new ResizeObserver(entries => {
                 for (let entry of entries) {
                     const { height } = entry.contentRect;
-                    console.log('ResizeObserver:', height);
                     const newHeight = Math.max(height, 100);
-                    if (Math.abs(newHeight - prevHeightRef.current) > 0 && !isAdjustingRef.current) {
+
+                    // Only update if different from current dimensions.height
+                    if (newHeight !== dimensions.height && !isAdjustingRef.current) {
                         isAdjustingRef.current = true;
                         onUpdateCard(_id, { dimensions: { width: dimensions.width, height: newHeight } });
                         prevHeightRef.current = newHeight;
@@ -160,7 +165,7 @@ const Card: React.FC<CardProps> = React.memo(({
                 observer.disconnect();
             };
         }
-    }, [isEditing, isFolded, onUpdateCard, _id, dimensions.width]);
+    }, [isEditing, isFolded, onUpdateCard, _id, dimensions.width, dimensions.height]);
 
     // Adjust height when content or fold state changes 
     useEffect(() => {  
@@ -189,11 +194,15 @@ const Card: React.FC<CardProps> = React.memo(({
             onResizeStop={(e, direction, ref, delta, position) => {  
                 const newWidth = Math.max(parseInt(ref.style.width, 10), 150); // Minimum width 150px 
                 const newHeight = Math.max(parseInt(ref.style.height, 10), 100); // Minimum height 100px 
-                onUpdateCard(_id, {   
-                    dimensions: { width: newWidth, height: newHeight },  
-                    position: position  
-                });  
-                prevHeightRef.current = newHeight; // Update previous height 
+
+                // Only update if different
+                if (newWidth !== dimensions.width || newHeight !== dimensions.height) {
+                    onUpdateCard(_id, {   
+                        dimensions: { width: newWidth, height: newHeight },  
+                        position: position  
+                    });  
+                    prevHeightRef.current = newHeight; // Update previous height 
+                }
                 isAdjustingRef.current = false; // Reset adjusting flag
             }}  
             bounds="parent"  
@@ -239,7 +248,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
                 {isEditing ? (
                     <div className="flex flex-col">
-                        {/* edit content */}
+                        {/* Edit content */}
                         <input  
                             type="text"  
                             value={editedTitle}  
