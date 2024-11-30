@@ -47,28 +47,28 @@ const Card: React.FC<CardProps> = React.memo(({
     const isAdjustingRef = useRef<boolean>(false); // Flag to prevent infinite loop
 
 
-        // 進入全螢幕模式
-        const enterFullscreen = useCallback(() => {
-            if (cardRef.current) {
-                cardRef.current.requestFullscreen();
-                setIsFullscreen(true);
-            }
-        }, []);
-    
-        // 退出全螢幕模式
-        const exitFullscreen = useCallback(() => {
-            document.exitFullscreen();
-            setIsFullscreen(false);
-        }, []);
-    
-        // 切換全螢幕
-        const toggleFullscreen = useCallback(() => {
-            if (isFullscreen) {
-                exitFullscreen();
-            } else {
-                enterFullscreen();
-            }
-        }, [isFullscreen, enterFullscreen, exitFullscreen]);
+    // Enter full screen mode
+    const enterFullscreen = useCallback(() => {
+        if (cardRef.current) {
+            cardRef.current.requestFullscreen();
+            setIsFullscreen(true);
+        }
+    }, []);
+
+    // Exit full screen mode
+    const exitFullscreen = useCallback(() => {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+    }, []);
+
+    // Toggle full screen mode
+    const toggleFullscreen = useCallback(() => {
+        if (isFullscreen) {
+            exitFullscreen();
+        } else {
+            enterFullscreen();
+        }
+    }, [isFullscreen, enterFullscreen, exitFullscreen]);
 
     // Function to adjust card height immediately without debounce 
     const adjustHeight = useCallback(() => {  
@@ -234,7 +234,7 @@ const Card: React.FC<CardProps> = React.memo(({
                 }
                 isAdjustingRef.current = false; // Reset adjusting flag
             }}  
-            bounds="parent"  
+            bounds={'window'}  
             enableResizing={{  
                 top: !isEditing,  
                 right: true,  
@@ -245,8 +245,7 @@ const Card: React.FC<CardProps> = React.memo(({
                 bottomLeft: !isEditing,  
                 topLeft: !isEditing  
             }}  
-            className={`${isSelected ? 'ring-4 ring-blue-500' : ''}`}  
-            dragHandleClassName="drag-handle" // Use a specific drag handle 
+            className={`${isSelected ? 'ring-4 ring-blue-500' : ''}`}   
             disableDragging={false} // Allow dragging 
         >  
             <div  
