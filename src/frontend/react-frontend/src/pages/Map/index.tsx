@@ -4,6 +4,7 @@ import React, { useState, useEffect, FormEvent, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
 import { getAllWhiteboards, createWhiteboard, deleteWhiteboardById } from '@/services/whiteboardService';
+import  Sidebar  from '@/components/common/sidebar';
 
 const Map: React.FC = () => {
     const navigate = useNavigate();
@@ -128,7 +129,19 @@ const Map: React.FC = () => {
             className="relative w-full h-screen bg-white"
             onContextMenu={handleContextMenu}
         >
-            <h2 className="text-2xl font-semibold p-5">Map Page</h2>
+
+            {/* Render the sidebar and the main content */}
+            <div className="flex">
+    
+                <div className="mt-0 ml-0 flex-shrink-0">
+                    <Sidebar />
+                </div>
+
+                <div className="flex-grow ml-5"> 
+                    <h2 className="text-2xl text-center font-semibold p-5">Map Page</h2>
+                   
+                </div>
+            </div>
 
             {/* Render all the whiteboards */}
             <div className="absolute top-0 left-0 w-full h-full">
@@ -179,6 +192,8 @@ const Map: React.FC = () => {
                     </div>
                 ))}
             </div>
+
+
 
             {/* Context Menu for Adding Whiteboard */}
             {contextMenu && (

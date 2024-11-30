@@ -7,7 +7,7 @@ import { CardData } from '@/interfaces/Card/CardData';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
 import { getAllCards, createCard, updateCard, deleteCard } from '@/services/cardService';
 import { getWhiteboardById, updateWhiteboard } from '@/services/whiteboardService';
-
+import  Sidebar  from '@/components/common/sidebar';
 
 const Whiteboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -197,9 +197,6 @@ const Whiteboard: React.FC = () => {
             onKeyDown={handleKeyDown}
             tabIndex={0}
         >
-            <h2 className="text-2xl font-semibold mb-4">
-                {whiteboard ? whiteboard.whiteboardTitle : 'Loading...'}
-            </h2>
 
             {/* Card Rendering Section */}
             {cards.map((card) => (
@@ -210,9 +207,24 @@ const Whiteboard: React.FC = () => {
                     onDelete={deleteCardHandler}
                     isSelected={card._id === selectedCardId}
                     onSelect={handleSelectCard}
-                    onCopyCard={handleCopyCard} // 傳遞複製函數
+                    onCopyCard={handleCopyCard} 
                 />
             ))}
+
+            {/* Render the sidebar and the main content */}
+            <div className="flex">
+                
+                <div className="mt-0 ml-0 flex-shrink-0">
+                    <Sidebar />
+                </div>
+
+                <div className="flex-grow ml-5"> 
+                    <h2 className="text-2xl text-center font-semibold p-5">
+                        {whiteboard ? whiteboard.whiteboardTitle : 'Loading...'}
+                    </h2>
+                
+                </div>
+            </div>
 
             {/* Display the context menu for adding, deleting, or pasting cards */}
             {contextMenu && (
