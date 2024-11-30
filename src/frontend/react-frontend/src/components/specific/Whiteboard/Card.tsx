@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from
 import { CardData } from '@/interfaces/Card/CardData'; 
 import { Rnd } from 'react-rnd'; 
 import ResizeObserver from 'resize-observer-polyfill'; 
-
+import Tag from '@/components/specific/Card/tag';
 
 
 // Interface for Card component props extending CardData
@@ -107,6 +107,12 @@ const Card: React.FC<CardProps> = React.memo(({
         return null;
     }
 
+    // Method to handle tag updates
+   const handleTagUpdate = (newTag: string) => {
+        if (_id) {
+            onUpdateCard(_id, { tag: newTag });
+        }
+    };
 
     // Function to handle card deletion with confirmation
     const handleDelete = useCallback((e: React.MouseEvent) => {
@@ -312,6 +318,10 @@ const Card: React.FC<CardProps> = React.memo(({
                     &times;
                 </button>
 
+
+                {/* Add Tag component */}
+                <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
+
                 {isEditing ? (
                     <div className="flex flex-col">
                         {/* Edit content */}
@@ -336,6 +346,9 @@ const Card: React.FC<CardProps> = React.memo(({
                                 />  
                             </> 
                         )} 
+
+
+
                         {/* Button to save changes */}  
                         <button  
                             onClick={handleSave}  
