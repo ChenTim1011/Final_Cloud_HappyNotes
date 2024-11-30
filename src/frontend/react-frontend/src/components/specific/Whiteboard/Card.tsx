@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'; 
 import { CardData } from '@/interfaces/Card/CardData'; 
 import { Rnd } from 'react-rnd'; 
-import ResizeObserver from 'resize-observer-polyfill'; // 引入 ResizeObserver
+import ResizeObserver from 'resize-observer-polyfill'; 
+
+
 
 // Interface for Card component props extending CardData
 interface CardProps extends CardData {
@@ -37,11 +39,36 @@ const Card: React.FC<CardProps> = React.memo(({
     const [editedTitle, setEditedTitle] = useState<string>(cardTitle);
     const [editedContent, setEditedContent] = useState<string>(content);
     const [isFolded, setIsFolded] = useState<boolean>(!!foldOrNot);
+    const [isFullscreen, setIsFullscreen] = useState<boolean>(false); 
     const cardRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null); // Ref to the title element
     const prevHeightRef = useRef<number>(dimensions.height); // Store previous height
     const isAdjustingRef = useRef<boolean>(false); // Flag to prevent infinite loop
+
+
+        // 進入全螢幕模式
+        const enterFullscreen = useCallback(() => {
+            if (cardRef.current) {
+                cardRef.current.requestFullscreen();
+                setIsFullscreen(true);
+            }
+        }, []);
+    
+        // 退出全螢幕模式
+        const exitFullscreen = useCallback(() => {
+            document.exitFullscreen();
+            setIsFullscreen(false);
+        }, []);
+    
+        // 切換全螢幕
+        const toggleFullscreen = useCallback(() => {
+            if (isFullscreen) {
+                exitFullscreen();
+            } else {
+                enterFullscreen();
+            }
+        }, [isFullscreen, enterFullscreen, exitFullscreen]);
 
     // Function to adjust card height immediately without debounce 
     const adjustHeight = useCallback(() => {  
@@ -264,6 +291,16 @@ const Card: React.FC<CardProps> = React.memo(({
                     title="複製卡片"
                 >
                     📄
+                </button>
+
+                {/* Fullscreen button  */}
+                <button
+                    onClick={toggleFullscreen}
+                    className="absolute top-0 left-16 text-black-500 hover:text-gray-700 focus:outline-none"
+                    style={{ zIndex: 10 }}
+                    title="全螢幕"
+                >
+                    {isFullscreen ?   '離開全螢幕' : '🖥️'}
                 </button>
 
 
