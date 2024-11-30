@@ -4,6 +4,7 @@ const mongoose = require("../config/db");
 const whiteboardSchema = new mongoose.Schema({
   whiteboardTitle: { type: String, default: "New Whiteboard" },
   isPrivate: { type: Boolean, default: false },
+  //TODO: delete
   userId: { type: String, required: true },
   //TODO: userId: mongoose.Schema.Types.ObjectId,
   // reference to the User 's _id but we dont have User model yet,so we use String temporarily.
