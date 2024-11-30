@@ -40,12 +40,38 @@ const Card: React.FC<CardProps> = React.memo(({
     const [editedContent, setEditedContent] = useState<string>(content);
     const [isFolded, setIsFolded] = useState<boolean>(!!foldOrNot);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false); 
+    const [localDimensions, setLocalDimensions] = useState(dimensions);
+    const [localPosition, setLocalPosition] = useState(position);
+    
     const cardRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null); // Ref to the title element
     const prevHeightRef = useRef<number>(dimensions.height); // Store previous height
     const isAdjustingRef = useRef<boolean>(false); // Flag to prevent infinite loop
+    const lastInteractionRef = useRef<number>(Date.now());
+    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Function to update server state with debounce
+    const debouncedUpdate = useCallback((updates: Partial<CardData>) => {
+        // Clear any pending timeouts
+        if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
+        }
+
+        // Set new timeout to update server
+        updateTimeoutRef.current = setTimeout(() => {
+            const timeSinceLastInteraction = Date.now() - lastInteractionRef.current;
+            
+            // Only update if user hasn't interacted in the last 2 seconds
+            if (timeSinceLastInteraction >= 2000 && !isAdjustingRef.current) {
+                isAdjustingRef.current = true;
+                onUpdateCard(_id, updates);
+                setTimeout(() => {
+                    isAdjustingRef.current = false;
+                }, 100);
+            }
+        }, 2000);
+    }, [_id, onUpdateCard]);
 
     // Enter full screen mode
     const enterFullscreen = useCallback(() => {
@@ -76,18 +102,27 @@ const Card: React.FC<CardProps> = React.memo(({
             const newHeight = Math.max(cardRef.current.scrollHeight, 100); 
 
             // Only update if newHeight is different from current dimensions.height
-            if (newHeight !== dimensions.height && !isAdjustingRef.current) { 
+            if (newHeight !== prevHeightRef.current && !isAdjustingRef.current) { 
                 isAdjustingRef.current = true; // Prevent loop
-                onUpdateCard(_id, { dimensions: { width: dimensions.width, height: newHeight } }); 
+     
                 prevHeightRef.current = newHeight; // Update previous height
+
+                requestAnimationFrame(() => {
+                    onUpdateCard(_id, { 
+                        dimensions: { 
+                            width: dimensions.width, 
+                            height: newHeight 
+                        } 
+                    });
 
                 // Reset the flag in the next tick
                 setTimeout(() => {
                     isAdjustingRef.current = false;
-                }, 0);
-            } 
+                }, 100);
+            });
+            }
         }  
-    }, [dimensions.width, dimensions.height, onUpdateCard, _id, isEditing, isFolded]); 
+    }, [dimensions.width,onUpdateCard, _id, isEditing, isFolded]); 
 
     // Function to save edited content and update the card  
     const handleSave = useCallback(() => {
@@ -98,9 +133,8 @@ const Card: React.FC<CardProps> = React.memo(({
                 updatedAt: new Date()  
             });  
             setIsEditing(false);  
-            adjustHeight(); // Adjust height immediately after saving 
         }  
-    }, [ _id, onUpdateCard, editedTitle, editedContent, adjustHeight ]); 
+    }, [_id, onUpdateCard, editedTitle, editedContent]);
     // Error handling: Ensure card ID is defined
     if (!_id) {
         console.error("Card component received undefined id");
@@ -153,93 +187,107 @@ const Card: React.FC<CardProps> = React.memo(({
         });  
     }, [ onUpdateCard, _id, dimensions.width, dimensions.height ]); 
 
+
+
+
     // Function to handle content change
     const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setEditedContent(e.target.value);
+        lastInteractionRef.current = Date.now();
 
         if (textAreaRef.current) {
             textAreaRef.current.style.height = 'auto'; // Reset height to auto  
             textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;  
-            // Update card height in edit mode 
-            adjustHeight();
+
+            const newHeight = Math.max(textAreaRef.current.scrollHeight, 100);
+            setLocalDimensions(prev => ({
+                ...prev,
+                height: newHeight
+            }));
+
+            // Debounced server update
+            debouncedUpdate({
+                content: e.target.value,
+                dimensions: {
+                    width: localDimensions.width,
+                    height: newHeight
+                }
+            });
         }
-    }, [ adjustHeight ]); 
+    }, [localDimensions.width, debouncedUpdate]); 
+
+
+    // Handle resize with immediate visual feedback
+    const handleResize = useCallback((size: { width: number; height: number }, position: { x: number; y: number }) => {
+        lastInteractionRef.current = Date.now();
+        
+        // Immediate UI update
+        setLocalDimensions({
+            width: Math.max(size.width, 150),
+            height: Math.max(size.height, 100)
+        });
+        setLocalPosition(position);
+
+        // Debounced server update
+        debouncedUpdate({
+            dimensions: {
+                width: Math.max(size.width, 150),
+                height: Math.max(size.height, 100)
+            },
+            position
+        });
+    }, [debouncedUpdate]);
+
 
     // Ensure the textarea resizes correctly when entering edit mode 
     useLayoutEffect(() => { 
         if (isEditing && textAreaRef.current) { 
             textAreaRef.current.style.height = 'auto'; // Reset height to auto before measuring 
             textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; 
-            adjustHeight(); 
         } 
-    }, [isEditing, adjustHeight]); 
+    }, [isEditing]); 
 
-    // Use ResizeObserver to observe height when resizing the card
+
+    // Reset local state when props change
     useEffect(() => {
-        if (isEditing && !isFolded && cardRef.current) {
-            const observer = new ResizeObserver(entries => {
-                for (let entry of entries) {
-                    const { height } = entry.contentRect;
-                    const newHeight = Math.max(height, 100);
+        setLocalDimensions(dimensions);
+        setLocalPosition(position);
+    }, [dimensions, position]);
 
-                    // Only update if different from current dimensions.height
-                    if (newHeight !== dimensions.height && !isAdjustingRef.current) {
-                        isAdjustingRef.current = true;
-                        onUpdateCard(_id, { dimensions: { width: dimensions.width, height: newHeight } });
-                        prevHeightRef.current = newHeight;
-                        setTimeout(() => {
-                            isAdjustingRef.current = false;
-                        }, 0);
-                    }
-                }
-            });
-
-            observer.observe(cardRef.current);
-
-            return () => {
-                observer.disconnect();
-            };
-        }
-    }, [isEditing, isFolded, onUpdateCard, _id, dimensions.width, dimensions.height]);
-
-    // Adjust height when content or fold state changes 
-    useEffect(() => {  
-        if (isEditing && !isFolded) {  
-            // Only adjust height when editing and not folded 
-            adjustHeight();  
-        } else {  
-            // If not editing, ensure prevHeightRef is synced
-            prevHeightRef.current = dimensions.height;
-        }
-
-        // Cleanup function 
-        return () => { 
-            // Reset the adjusting flag 
+    // Cleanup timeouts on unmount
+    useEffect(() => {
+        return () => {
+            if (updateTimeoutRef.current) {
+                clearTimeout(updateTimeoutRef.current);
+            }
             isAdjustingRef.current = false;
-        }; 
-    }, [content, isFolded, adjustHeight, isEditing, dimensions.height]); 
+        };
+    }, []);
 
     return (
-        <Rnd  
-            size={{ width: dimensions.width, height: dimensions.height }}  
-            position={{ x: position.x, y: position.y }}  
-            onDragStop={(e, d) => {  
-                onUpdateCard(_id, { position: { x: d.x, y: d.y } });  
-            }}  
-            onResizeStop={(e, direction, ref, delta, position) => {  
-                const newWidth = Math.max(parseInt(ref.style.width, 10), 150); // Minimum width 150px 
-                const newHeight = Math.max(parseInt(ref.style.height, 10), 100); // Minimum height 100px 
-
-                // Only update if different
-                if (newWidth !== dimensions.width || newHeight !== dimensions.height) {
-                    onUpdateCard(_id, {   
-                        dimensions: { width: newWidth, height: newHeight },  
-                        position: position  
-                    });  
-                    prevHeightRef.current = newHeight; // Update previous height 
-                }
-                isAdjustingRef.current = false; // Reset adjusting flag
-            }}  
+        <Rnd
+            size={localDimensions}
+            position={localPosition}
+            onDragStop={(e, d) => {
+                handleResize(localDimensions, { x: d.x, y: d.y });
+            }}
+            onResize={(e, direction, ref, delta, position) => {
+                // Immediate visual feedback during resize
+                setLocalDimensions({
+                    width: Math.max(parseInt(ref.style.width, 10), 150),
+                    height: Math.max(parseInt(ref.style.height, 10), 100)
+                });
+                setLocalPosition(position);
+            }}
+            onResizeStop={(e, direction, ref, delta, position) => {
+                handleResize(
+                    {
+                        width: Math.max(parseInt(ref.style.width, 10), 150),
+                        height: Math.max(parseInt(ref.style.height, 10), 100)
+                    },
+                    position
+                );
+            }}
             bounds={'window'}  
             enableResizing={{  
                 top: !isEditing,  
@@ -308,6 +356,8 @@ const Card: React.FC<CardProps> = React.memo(({
                     {isFullscreen ?   '離開全螢幕' : '🖥️'}
                 </button>
 
+                {/* Add Tag component */}
+                <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
 
                 {/* Delete button */} 
                 <button
@@ -319,11 +369,17 @@ const Card: React.FC<CardProps> = React.memo(({
                 </button>
 
 
-                {/* Add Tag component */}
-                <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
-
                 {isEditing ? (
                     <div className="flex flex-col">
+
+                        {/* Button to save changes */}  
+                        <button  
+                            onClick={handleSave}  
+                            className="mb-2 px-3 py-1 bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none transition duration-200 ease-in-out shadow-md transform hover:scale-105 self-end"  
+                        >  
+                            儲存 
+                        </button>  
+
                         {/* Edit content */}
                         <input  
                             type="text"  
@@ -341,7 +397,7 @@ const Card: React.FC<CardProps> = React.memo(({
                                     placeholder="Enter content here"  
                                     value={editedContent}  
                                     onChange={handleContentChange}  
-                                    className="w-full p-2 border rounded resize-none" // 移除 flex-shrink
+                                    className="w-full p-2 border rounded resize-none" 
                                     style={{ overflow: 'auto', boxSizing: 'border-box', transition: 'none' }}  
                                 />  
                             </> 
@@ -349,13 +405,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
 
 
-                        {/* Button to save changes */}  
-                        <button  
-                            onClick={handleSave}  
-                            className="mt-2 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none self-end"  
-                        >  
-                            儲存 
-                        </button>  
+
                     </div> 
                 ) : (  
                     <div className="flex flex-col"> 
