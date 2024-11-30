@@ -62,8 +62,8 @@ const Card: React.FC<CardProps> = React.memo(({
         updateTimeoutRef.current = setTimeout(() => {
             const timeSinceLastInteraction = Date.now() - lastInteractionRef.current;
             
-            // Only update if user hasn't interacted in the last 2 seconds
-            if (timeSinceLastInteraction >= 2000 && !isAdjustingRef.current) {
+            // Only update if user hasn't interacted in the last 5 seconds
+            if (timeSinceLastInteraction >= 5000 && !isAdjustingRef.current) {
                 isAdjustingRef.current = true;
                 onUpdateCard(_id, updates);
                 setTimeout(() => {
@@ -96,33 +96,6 @@ const Card: React.FC<CardProps> = React.memo(({
         }
     }, [isFullscreen, enterFullscreen, exitFullscreen]);
 
-    // Function to adjust card height immediately without debounce 
-    const adjustHeight = useCallback(() => {  
-        if (cardRef.current && isEditing && !isFolded) {  
-            const newHeight = Math.max(cardRef.current.scrollHeight, 100); 
-
-            // Only update if newHeight is different from current dimensions.height
-            if (newHeight !== prevHeightRef.current && !isAdjustingRef.current) { 
-                isAdjustingRef.current = true; // Prevent loop
-     
-                prevHeightRef.current = newHeight; // Update previous height
-
-                requestAnimationFrame(() => {
-                    onUpdateCard(_id, { 
-                        dimensions: { 
-                            width: dimensions.width, 
-                            height: newHeight 
-                        } 
-                    });
-
-                // Reset the flag in the next tick
-                setTimeout(() => {
-                    isAdjustingRef.current = false;
-                }, 100);
-            });
-            }
-        }  
-    }, [dimensions.width,onUpdateCard, _id, isEditing, isFolded]); 
 
     // Function to save edited content and update the card  
     const handleSave = useCallback(() => {
@@ -130,6 +103,10 @@ const Card: React.FC<CardProps> = React.memo(({
             onUpdateCard(_id, {  
                 cardTitle: editedTitle,  
                 content: editedContent,  
+                dimensions: { 
+                    width: dimensions.width, 
+                    height: dimensions.height, 
+                } ,
                 updatedAt: new Date()  
             });  
             setIsEditing(false);  
