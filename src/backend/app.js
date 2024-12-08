@@ -1,7 +1,9 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const whiteboardRoutes = require("./routes/whiteboardRoutes");
 const cardRoutes = require("./routes/cardRoutes");
+const redisClient = require("./config/redis");
 
 const app = express();
 
