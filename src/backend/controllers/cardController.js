@@ -1,12 +1,20 @@
 const Card = require("../models/Card"); // import the Card model
+const CacheService = require("../services/cacheService");
 
 // Get all cards
 const GET_CARDS = async (req, res) => {
   try {
+    // Check if cards are cached
+    const cachedCards = await CacheService.getAllCards();
+    if (cachedCards) {
+      return res.json(cachedCards);
+    }
+
     const cards = await Card.find();
     const formattedCards = cards.map((card) => ({
       ...card.toObject(),
     }));
+    await CacheService.setAllCards(formattedCards);
     res.json(formattedCards);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch cards" });
@@ -42,6 +50,10 @@ const POST_CARD = async (req, res) => {
     const formattedCard = {
       ...savedCard.toObject(),
     };
+
+    await CacheService.setCard(savedCard._id, formattedCard);
+    await CacheService.invalidateAllCards();
+
     res.status(201).json(formattedCard);
   } catch (error) {
     res
@@ -85,6 +97,10 @@ const PUT_CARD = async (req, res) => {
     const formattedCard = {
       ...updatedCard.toObject(),
     };
+
+    await CacheService.setCard(id, formattedCard);
+    await CacheService.invalidateAllCards();
+
     res.json(formattedCard);
   } catch (error) {
     res
@@ -101,6 +117,10 @@ const DELETE_CARD = async (req, res) => {
     if (!deletedCard) {
       return res.status(404).json({ error: "Card not found" });
     }
+
+    await CacheService.invalidateCard(id);
+    await CacheService.invalidateAllCards();
+
     res.json({ message: "Card deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Failed to delete card" });
