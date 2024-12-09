@@ -5,6 +5,7 @@ import { CardData } from '@/interfaces/Card/CardData';
 import { Rnd } from 'react-rnd'; 
 import ResizeObserver from 'resize-observer-polyfill'; 
 import Tag from '@/components/specific/Card/tag';
+import QuillEditor from '../Card/text-editor/quilleditor.js';
 
 
 // Interface for Card component props extending CardData
@@ -37,7 +38,7 @@ const Card: React.FC<CardProps> = React.memo(({
     // Local state for editing mode and input values
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [editedTitle, setEditedTitle] = useState<string>(cardTitle);
-    const [editedContent, setEditedContent] = useState<string>(content);
+    const [editedContent, setEditedContent] = useState<string|any>(content);
     const [isFolded, setIsFolded] = useState<boolean>(!!foldOrNot);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false); 
     const [localDimensions, setLocalDimensions] = useState(dimensions);
@@ -193,6 +194,9 @@ const Card: React.FC<CardProps> = React.memo(({
         }
     }, [localDimensions.width, debouncedUpdate]); 
 
+    const handleContentChange2 = (newContent: any) => {
+        setEditedContent(newContent);
+    };
 
     // Handle resize with immediate visual feedback
     const handleResize = useCallback((size: { width: number; height: number }, position: { x: number; y: number }) => {
@@ -366,8 +370,13 @@ const Card: React.FC<CardProps> = React.memo(({
                             placeholder="Enter card title"  
                             style={{ boxSizing: 'border-box', transition: 'none' }}  
                         />  
-                        {!isFolded && ( 
+                        {!isFolded && (             
                             <> 
+                                {/* TextEditor for editing the card content */} 
+                                <QuillEditor
+                                    content={editedContent}
+                                    handleContentChange2={handleContentChange2}
+                                />
                                 {/* Textarea for editing the card content */}  
                                 <textarea  
                                     ref={textAreaRef}  
