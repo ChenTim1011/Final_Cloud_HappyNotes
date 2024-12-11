@@ -65,7 +65,7 @@ const Card: React.FC<CardProps> = React.memo(({
             // Only update if user hasn't interacted in the last 5 seconds
             if (timeSinceLastInteraction >= 5000 && !isAdjustingRef.current) {
                 isAdjustingRef.current = true;
-                onUpdateCard(_id, updates);
+                handlePatchUpdate(updates);
                 setTimeout(() => {
                     isAdjustingRef.current = false;
                 }, 100);
@@ -164,12 +164,33 @@ const Card: React.FC<CardProps> = React.memo(({
         });  
     }, [ onUpdateCard, _id, dimensions.width, dimensions.height ]); 
 
+    const handlePatchUpdate = useCallback(async (changes: Partial<CardData>) => {
+        try {
+            const response = await fetch(`/api/cards/${_id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ changes }),
+            });
 
+            if (!response.ok) {
+                throw new Error('Failed to update card');
+            }
+
+            const updatedCard = await response.json();
+            onUpdateCard(_id, updatedCard);
+        } catch (error) {
+            console.error('Error updating card:', error);
+        }
+    }, [_id, onUpdateCard]);
 
 
     // Function to handle content change
     const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setEditedContent(e.target.value);
+        
+        const newContent = e.target.value;
+        setEditedContent(newContent);
         lastInteractionRef.current = Date.now();
 
         if (textAreaRef.current) {
@@ -184,14 +205,14 @@ const Card: React.FC<CardProps> = React.memo(({
 
             // Debounced server update
             debouncedUpdate({
-                content: e.target.value,
+                content: newContent,
                 dimensions: {
                     width: localDimensions.width,
                     height: newHeight
                 }
             });
         }
-    }, [localDimensions.width, debouncedUpdate]); 
+    }, [localDimensions.width, handlePatchUpdate, debouncedUpdate]);
 
 
     // Handle resize with immediate visual feedback
@@ -213,7 +234,7 @@ const Card: React.FC<CardProps> = React.memo(({
             },
             position
         });
-    }, [debouncedUpdate]);
+    }, [handlePatchUpdate,debouncedUpdate]);
 
 
     // Ensure the textarea resizes correctly when entering edit mode 

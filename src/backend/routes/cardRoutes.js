@@ -2,16 +2,19 @@ const express = require("express");
 const router = express.Router();
 const cardController = require("../controllers/cardController");
 
-// 獲取所有卡片
+// Get all cards
 router.get("/", cardController.GET_CARDS);
 
-// 創建新卡片
+// Create a new card
 router.post("/", cardController.POST_CARD);
 
-// 更新指定ID的卡片
+// Update a card by ID
 router.put("/:id", cardController.PUT_CARD);
 
-// 刪除指定ID的卡片
+// Delete a card by ID
 router.delete("/:id", cardController.DELETE_CARD);
+
+// Partial update of a card
+router.patch("/:id", cardController.PATCH_CARD);
 
 module.exports = router;
