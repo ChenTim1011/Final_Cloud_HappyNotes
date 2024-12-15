@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const cardController = require("../controllers/cardController");
 
+// Partial update of multiple cards
+router.patch("/batch", cardController.PATCH_CARDS_BATCH);
+
 // Get all cards
 router.get("/", cardController.GET_CARDS);
 

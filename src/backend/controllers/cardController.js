@@ -177,4 +177,35 @@ const PATCH_CARD = async (req, res) => {
   }
 };
 
-module.exports = { GET_CARDS, POST_CARD, PUT_CARD, DELETE_CARD, PATCH_CARD };
+// PATCH_CARDS_BATCH
+const PATCH_CARDS_BATCH = async (req, res) => {
+  const { updates } = req.body;
+
+  if (!updates || !Array.isArray(updates)) {
+    return res.status(400).json({ message: "Invalid updates format." });
+  }
+
+  try {
+    const bulkOperations = updates.map((update) => ({
+      updateOne: {
+        filter: { _id: update.id },
+        update: { $set: update.changes },
+      },
+    }));
+
+    await Card.bulkWrite(bulkOperations);
+    res.status(200).json({ message: "Batch update successful." });
+  } catch (error) {
+    console.error("Batch update failed:", error);
+    res.status(500).json({ message: "Batch update failed.", error });
+  }
+};
+
+module.exports = {
+  GET_CARDS,
+  POST_CARD,
+  PUT_CARD,
+  DELETE_CARD,
+  PATCH_CARD,
+  PATCH_CARDS_BATCH,
+};
