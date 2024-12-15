@@ -1,13 +1,14 @@
-// Whiteboard.tsx - Displays the whiteboard page with cards 
+// src/pages/Whiteboard.tsx - Displays the whiteboard page with cards 
 
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import Card from '@/components/specific/Whiteboard/Card';
 import { CardData } from '@/interfaces/Card/CardData';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
-import { getAllCards, createCard, updateCard, deleteCard } from '@/services/cardService';
 import { getWhiteboardById, updateWhiteboard } from '@/services/whiteboardService';
-import  Sidebar  from '@/components/common/sidebar';
+import { deleteCard, createCard, updateCard } from '@/services/cardService';
+import Sidebar from '@/components/common/sidebar';
+import { toast } from 'react-toastify';
 
 const Whiteboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -17,11 +18,13 @@ const Whiteboard: React.FC = () => {
     const [contextMenu, setContextMenu] = useState<{
         x: number;
         y: number;
-        action?: 'add' | 'delete' | 'paste';
+        actions?: ('add' | 'delete' | 'paste')[];
     } | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [copiedCard, setCopiedCard] = useState<CardData | null>(null); // 新增的狀態
+    const [copiedCard, setCopiedCard] = useState<CardData | null>(null); 
+
+    const whiteboardRef = useRef<HTMLDivElement>(null); 
 
     // Fetch whiteboard and associated cards data when the component mounts or id changes
     useEffect(() => {
@@ -29,17 +32,17 @@ const Whiteboard: React.FC = () => {
             if (id) {
                 try {
                     // Fetch the whiteboard data by ID
-                    const whiteboard = await getWhiteboardById(id);
-                    setWhiteboard(whiteboard);
+                    const fetchedWhiteboard = await getWhiteboardById(id);
+                    setWhiteboard(fetchedWhiteboard);
 
-                    if (whiteboard && whiteboard._id) {
+                    if (fetchedWhiteboard && fetchedWhiteboard._id) {
                         // Ensure whiteboard.cards is an array
-                        if (!Array.isArray(whiteboard.cards)) {
-                            whiteboard.cards = [];
+                        if (!Array.isArray(fetchedWhiteboard.cards)) {
+                            fetchedWhiteboard.cards = [];
                         }
 
                         // Set the cards for rendering
-                        setCards(whiteboard.cards);
+                        setCards(fetchedWhiteboard.cards);
                         setLoading(false);
                     } else {
                         console.error("Whiteboard data does not have an ID");
@@ -59,8 +62,11 @@ const Whiteboard: React.FC = () => {
 
     // Function to handle copying a card
     const handleCopyCard = (card: CardData) => {
-        setCopiedCard(card);
-        alert('卡片已複製，您可以在空白區域右鍵選擇貼上。');
+        const cardWithoutPosition = {
+            ...card,
+        };
+        setCopiedCard(cardWithoutPosition);
+        toast.info('卡片已複製，您可以在空白區域右鍵選擇貼上。');
     };
 
     // Add a new card at the specified x and y coordinates
@@ -71,16 +77,21 @@ const Whiteboard: React.FC = () => {
             return; 
         }
 
+        const position = { 
+            x: x - window.scrollX, 
+            y: y - window.scrollY 
+        };
+
         const newCardData: Omit<CardData, '_id'> = {
-            cardTitle: cardData ? `${cardData.cardTitle} ` : '新卡片',
+            cardTitle: cardData ? `${cardData.cardTitle} Copy` : '新卡片',
             content: cardData ? cardData.content : '新內容',
             createdAt: new Date(),
             updatedAt: new Date(),
             dueDate: cardData && cardData.dueDate ? new Date(cardData.dueDate) : new Date(),
             tag: cardData ? cardData.tag : '',
             foldOrNot: cardData ? cardData.foldOrNot : false, 
-            position: { x, y },
-            dimensions: cardData ? cardData.dimensions : { width: 200, height: 150 },
+            position: position,
+            dimensions: cardData ? { ...cardData.dimensions } : { width: 300, height: 300 },
             connection: cardData ? cardData.connection : [],
             comments: cardData ? cardData.comments : [],
         };
@@ -89,22 +100,19 @@ const Whiteboard: React.FC = () => {
             // Create a new card and add it to the state
             const createdCard = await createCard(newCardData);
             console.log("Created Card:", createdCard);
-            setCards([...cards, createdCard]);
-
+            
             if (createdCard._id) {
-                // Update whiteboard with the new card's ID
-                const updatedCardIds: string[] = [...whiteboard.cards.map(card => card._id), createdCard._id];
+                // Update the local state to include the new card
+                setCards(prevCards => [...prevCards, createdCard]);
 
-                // Update the whiteboard's cards in the backend
-                const updatedWhiteboard = await updateWhiteboard(whiteboard._id, { cards: updatedCardIds });
-                
-                setWhiteboard(updatedWhiteboard);
-                setCards(updatedWhiteboard.cards);
+                // Update the whiteboard to include the new card
+                const updatedCardIds = [...(whiteboard.cards || []).map(card => typeof card === 'string' ? card : card._id), createdCard._id];
+                await updateWhiteboard(whiteboard._id, { cards: updatedCardIds });
             }
             setContextMenu(null);
         } catch (err: any) {
             console.error('Failed to add card:', err);
-            alert(err.message || 'Failed to add card');
+            toast.error(err.message || 'Failed to add card');
         }
     };
 
@@ -116,13 +124,12 @@ const Whiteboard: React.FC = () => {
                 await deleteCard(cardId);
 
                 // Update the local state to remove the deleted card
-                setCards(cards.filter((card) => card._id !== cardId));
+                setCards(prevCards => prevCards.filter((card) => card._id !== cardId));
 
                 // Update the whiteboard's card list in the backend
                 const updatedCardIds: string[] = whiteboard.cards
-                    .filter((card: CardData) => card._id !== cardId)
-                    .map((card: CardData) => card._id)
-                    .filter((id): id is string => id !== undefined);
+                    .filter((card) => typeof card === 'string' ? card !== cardId : card._id !== cardId)
+                    .map((card) => typeof card === 'string' ? card : card._id);
 
                 const updatedWhiteboard = await updateWhiteboard(whiteboard._id, { cards: updatedCardIds });
                 setWhiteboard(updatedWhiteboard);
@@ -135,7 +142,7 @@ const Whiteboard: React.FC = () => {
                 setContextMenu(null);
             } catch (err: any) {
                 console.error('Failed to delete card:', err);
-                alert(err.message || 'Failed to delete card');
+                toast.error(err.message || 'Failed to delete card');
             }
         }
     };
@@ -156,7 +163,7 @@ const Whiteboard: React.FC = () => {
             await updateCard(cardId, updatedFields);
         } catch (err: any) {
             console.error('Failed to update card content:', err);
-            alert(err.message || 'Failed to update card content');
+            toast.error(err.message || 'Failed to update card content');
         }
     };
 
@@ -164,10 +171,27 @@ const Whiteboard: React.FC = () => {
     const handleRightClick = (e: React.MouseEvent, cardId?: string) => {
         e.preventDefault();
         setSelectedCardId(cardId || null);
+
+        let relativeX = e.clientX;
+        let relativeY = e.clientY;
+
+        if (whiteboardRef.current) {
+            const rect = whiteboardRef.current.getBoundingClientRect();
+            relativeX = e.clientX - rect.left;
+            relativeY = e.clientY - rect.top;
+            console.log(`Relative Position - X: ${relativeX}, Y: ${relativeY}`);
+        }
+
+        console.log('Right-click detected on:', cardId ? `Card ${cardId}` : 'Empty area'); 
+
         setContextMenu({
-            x: e.clientX,
-            y: e.clientY,
-            action: cardId ? 'delete' : (copiedCard ? 'paste' : 'add'), // 根據是否有複製的卡片決定行動
+            x: relativeX,
+            y: relativeY,
+            actions: [
+                'add',
+                ...(copiedCard ? ['paste'] : []),
+                ...(cardId ? ['delete'] : [])
+            ] as ('add' | 'delete' | 'paste')[]
         });
     };
 
@@ -192,7 +216,9 @@ const Whiteboard: React.FC = () => {
 
     return (
         <div
+            ref={whiteboardRef} 
             className="relative w-full h-screen bg-white outline-none"
+            onClick={() => setContextMenu(null)} 
             onContextMenu={(e) => handleRightClick(e)}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -203,11 +229,13 @@ const Whiteboard: React.FC = () => {
                 <Card
                     key={card._id}
                     {...card}
-                    onUpdateCard={updateCardHandler}
                     onDelete={deleteCardHandler}
                     isSelected={card._id === selectedCardId}
                     onSelect={handleSelectCard}
                     onCopyCard={handleCopyCard} 
+                    setCards={setCards} 
+                    setFullscreenCardId={setSelectedCardId} 
+                    onRightClick={(e) => handleRightClick(e, card._id)}
                 />
             ))}
 
@@ -233,14 +261,15 @@ const Whiteboard: React.FC = () => {
                     style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
                     onClick={(e) => e.stopPropagation()} // Prevent event bubbling
                 >
-                    {contextMenu.action === 'add' ? (
+                    {contextMenu.actions && contextMenu.actions.includes('add') && (
                         <div
                             className="py-1 px-2 hover:bg-gray-700"
                             onClick={() => addCard(contextMenu.x, contextMenu.y)}
                         >
                             新增卡片
                         </div>
-                    ) : contextMenu.action === 'paste' ? (
+                    )}
+                    {contextMenu.actions &&  contextMenu.actions.includes('paste')  && (
                         <div
                             className="py-1 px-2 hover:bg-gray-700"
                             onClick={() => {
@@ -250,20 +279,19 @@ const Whiteboard: React.FC = () => {
                                 }
                             }}
                         >
-                            複製卡片
+                            貼上卡片
                         </div>
-                    ) : (
+                    )} 
+                    {selectedCardId && (
                         <div
                             className="py-1 px-2 hover:bg-gray-700"
                             onClick={() => {
-                                if (selectedCardId) {
                                     deleteCardHandler(selectedCardId);
-                                }
                             }}
                         >
                             刪除卡片
                         </div>
-                    )}
+                    )} 
                 </div>
             )}
         </div>
