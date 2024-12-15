@@ -1,9 +1,10 @@
 // src/components/specific/Whiteboard/Card.tsx 
 
-import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'; 
+import React, { useState, useEffect, useRef, useCallback } from 'react'; 
 import { CardData } from '@/interfaces/Card/CardData'; 
 import { Rnd } from 'react-rnd'; 
 import Tag from '@/components/specific/Card/tag';
+import QuillEditor from '../Card/text-editor/quilleditor';
 import { useBatchUpdate } from '@/components/specific/Card/BatchUpdateContext';
 import { toast } from 'react-toastify';
 import debounce from 'lodash.debounce'; 
@@ -20,7 +21,7 @@ interface CardProps extends CardData {
     onRightClick?: (e: React.MouseEvent, cardId: string) => void;
 }
 
-const MIN_HEIGHT = 300; 
+const MIN_HEIGHT = 300; // Adjust min height for QuillEditor
 const MAX_HEIGHT = 800; 
 const MIN_WIDTH = 300; 
 const MAX_WIDTH = 800; 
@@ -56,19 +57,18 @@ const Card: React.FC<CardProps> = React.memo(({
     const [localPosition, setLocalPosition] = useState(position);
     
     const cardRef = useRef<HTMLDivElement>(null);
-    const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null); // Ref to the title element
-    const prevHeightRef = useRef<number>(dimensions.height); // Store previous height
+    const contentRef = useRef<HTMLDivElement>(null); // Ref to QuillEditor content
 
     const { addCardUpdate } = useBatchUpdate();
 
-    // Add a function to update card content with debounce
+    // Function to update card content with debounce
     const handleUpdateCard = useCallback((cardId: string, changes: Partial<CardData>) => {
         // Update card in local state
         addCardUpdate(cardId, changes);
     }, [addCardUpdate]);
 
-    // Use lodash.debounce to debounce the update function
+    // Debounce the update function to batch updates
     const debouncedUpdate = useCallback(
         debounce((cardId: string, changes: Partial<CardData>) => {
             handleUpdateCard(cardId, changes);
@@ -117,7 +117,6 @@ const Card: React.FC<CardProps> = React.memo(({
     // Method to handle tag updates
     const handleTagUpdate = useCallback((newTag: string) => {
         if (_id) {
-            
             setCards(prevCards => {
                 return prevCards.map(card => {
                     if (card._id === _id) {
@@ -129,8 +128,7 @@ const Card: React.FC<CardProps> = React.memo(({
                     return card;
                 });
             });
-    
-            
+
             handleUpdateCard(_id, { tag: newTag });
         }
     }, [_id, handleUpdateCard, setCards]);
@@ -144,8 +142,6 @@ const Card: React.FC<CardProps> = React.memo(({
         }
     }, [ _id, onDelete ]); 
 
-
-
     // Function to toggle fold state without affecting editing state  
     const handleToggleFold = useCallback((e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent triggering onSelect
@@ -158,60 +154,76 @@ const Card: React.FC<CardProps> = React.memo(({
                 if (titleRef.current && !isFullscreen) {
                     const titleHeight = titleRef.current.offsetHeight + 32; // 16px padding on top and bottom
                     const updatedHeight = Math.max(titleHeight, MIN_HEIGHT);
-                    if (updatedHeight !== dimensions.height) {
-                        handleUpdateCard(_id, { 
-                            dimensions: { 
-                                width: dimensions.width, 
-                                height: updatedHeight 
-                            },
-                            foldOrNot: newFolded
+                    if (updatedHeight !== localDimensions.height) {
+                        setLocalDimensions(prevDims => {
+                            const newDims = {
+                                ...prevDims,
+                                height: updatedHeight
+                            };
+                            handleUpdateCard(_id, { 
+                                dimensions: newDims,
+                                foldOrNot: newFolded
+                            });
+                            return newDims;
                         });
-                        prevHeightRef.current = updatedHeight;
                     }
                 }
             } else {
                 // When unfolding: adjust height based on content
-                if (cardRef.current) {
-                    const fullHeight = cardRef.current.scrollHeight;
-                    const updatedHeight = Math.max(fullHeight, MIN_HEIGHT);
-                    if (updatedHeight !== dimensions.height) {
-                        handleUpdateCard(_id, { 
-                            dimensions: { 
-                                width: dimensions.width, 
-                                height: updatedHeight 
-                            },
-                            foldOrNot: newFolded
-                        });
-                        prevHeightRef.current = updatedHeight;
+                if (contentRef.current) {
+                    const editor = contentRef.current.querySelector(".ql-editor");
+                    if (editor) {
+                        const fullHeight = editor.scrollHeight + (titleRef.current?.offsetHeight || 0) + 32; // Title height + padding
+                        const updatedHeight = Math.max(fullHeight, MIN_HEIGHT);
+                        if (updatedHeight !== localDimensions.height) {
+                            setLocalDimensions(prevDims => {
+                                const newDims = {
+                                    ...prevDims,
+                                    height: updatedHeight
+                                };
+                                handleUpdateCard(_id, { 
+                                    dimensions: newDims,
+                                    foldOrNot: newFolded
+                                });
+                                return newDims;
+                            });
+                        }
                     }
                 }
             }
             return newFolded; // Explicitly return boolean for type safety
         });
-    }, [_id, dimensions.width, dimensions.height, handleUpdateCard, isFullscreen]);
+    }, [_id, handleUpdateCard, isFullscreen, localDimensions.height]);
 
     // Function to handle content change with debounce
-    const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const newContent = e.target.value;
+    const handleContentChange = useCallback((newContent: string) => {
         setEditedContent(newContent);
-
-        if (textAreaRef.current) {
-            textAreaRef.current.style.height = 'auto';
-            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
-            const newHeight = textAreaRef.current.scrollHeight;
-
-            // Only update card height if it has changed
-            setLocalDimensions(prev => ({
-                ...prev,
-                height: Math.max(newHeight, MIN_HEIGHT)
-            }));
-        }
 
         // Update card content with debounce
         debouncedUpdate(_id, {
             content: newContent
         });
     }, [_id, debouncedUpdate]);
+
+    // Function to handle height change from QuillEditor
+    const handleQuillHeightChange = useCallback((newHeight: number) => {
+        // Adjust card height based on QuillEditor content
+        const titleHeight = titleRef.current?.offsetHeight || 0;
+        const padding = 32; // Adjust this value based on actual padding and title height
+        const totalHeight = newHeight + titleHeight + padding;
+        const finalHeight = Math.min(totalHeight, MAX_HEIGHT);
+
+        setLocalDimensions(prev => {
+            const newDims = {
+                ...prev,
+                height: finalHeight
+            };
+            handleUpdateCard(_id, {
+                dimensions: newDims
+            });
+            return newDims;
+        });
+    }, [_id, handleUpdateCard]);
 
     // Handle resize with immediate visual feedback
     const handleResize = useCallback((size: { width: number; height: number }, position: { x: number; y: number }) => {
@@ -252,14 +264,6 @@ const Card: React.FC<CardProps> = React.memo(({
             enterFullscreen();
         }
     }, [isFullscreen, enterFullscreen, exitFullscreen]);
-
-    // Ensure the textarea resizes correctly when entering edit mode 
-    useLayoutEffect(() => { 
-        if (isEditing && textAreaRef.current) { 
-            textAreaRef.current.style.height = 'auto'; // Reset height to auto before measuring 
-            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; 
-        } 
-    }, [isEditing]); 
 
     // Reset local state when props change
     useEffect(() => {
@@ -314,9 +318,8 @@ const Card: React.FC<CardProps> = React.memo(({
                 bottomLeft: !isEditing,  
                 topLeft: !isEditing  
             }}  
-            disableDragging={isFullscreen} // Fullscreen mode disables dragging
+            disableDragging={isEditing} // Disable dragging when editing
             onContextMenu={(e:any) => {
-                //e.preventDefault(); 
                 e.stopPropagation(); 
                 onRightClick?.(e, _id); 
             }}
@@ -415,7 +418,7 @@ const Card: React.FC<CardProps> = React.memo(({
                             type="text"  
                             value={editedTitle}  
                             onChange={(e) => setEditedTitle(e.target.value)}  
-                            className="w-full px-2 py-1 border rounded mr-2  select-text"  
+                            className="w-full px-2 py-1 border rounded mr-2 select-text"  
                             placeholder="Enter card title"  
                             style={{ boxSizing: 'border-box', transition: 'none' , userSelect: 'text'}}  
                         />
@@ -425,7 +428,7 @@ const Card: React.FC<CardProps> = React.memo(({
                             onClick={handleSave}
                             className="px-3 py-1 bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none transition duration-200 ease-in-out shadow-md transform hover:scale-105 flex items-center justify-center"
                             >
-                            save
+                            Save
                         </button>
                     </div>
                 )}
@@ -436,34 +439,37 @@ const Card: React.FC<CardProps> = React.memo(({
                         <div className="flex flex-col select-text">
                             {!isFolded && ( 
                                 <> 
-                                    {/* Textarea for editing the card content */}  
-                                    <textarea  
-                                        ref={textAreaRef}  
-                                        placeholder="輸入內容"  
-                                        value={editedContent}  
-                                        onChange={handleContentChange}  
-                                        className="w-full p-2 border rounded resize-none select-text"
-                                        style={{ 
-                                            boxSizing: 'border-box', 
-                                            transition: 'none', 
-                                            overflow: 'hidden', 
-                                            minHeight: '100px',
-                                        }} 
-                                    />  
+                                    {/* QuillEditor for editing the card content */} 
+                                    <QuillEditor
+                                        content={editedContent}
+                                        handleContentChange2={handleContentChange}
+                                        readOnly={false}
+                                        theme="snow"
+                                        onHeightChange={handleQuillHeightChange}
+                                    />
                                 </>  
                             )}
                         </div> 
                     ) : (  
                         <div className="flex flex-col">
-                            <h3 ref={titleRef} className="text-lg font-semibold  mt-2">{cardTitle}</h3>  
-                            {!isFolded && <p className="mt-2 whitespace-pre-wrap select-text">{content}</p>}  
+                            <h3 ref={titleRef} className="text-lg font-semibold mt-2">{cardTitle}</h3>  
+                            {!isFolded && (
+                                <div className="mt-2">
+                                    <QuillEditor
+                                        content={content}
+                                        handleContentChange2={() => {}} // No-op in read-only mode
+                                        readOnly={true}
+                                        theme="bubble"
+                                        onHeightChange={handleQuillHeightChange}
+                                    />
+                                </div>
+                            )}  
                         </div> 
                     )}
                 </div>
             </div>
         </Rnd>  
-    );
+    )
+    });
 
-});
-
-export default Card;
+    export default Card;
