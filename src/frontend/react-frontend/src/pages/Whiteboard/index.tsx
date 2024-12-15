@@ -17,7 +17,7 @@ const Whiteboard: React.FC = () => {
     const [contextMenu, setContextMenu] = useState<{
         x: number;
         y: number;
-        action?: 'add' | 'delete' | 'paste';
+        actions: ('add' | 'delete' | 'paste')[];
     } | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -164,10 +164,16 @@ const Whiteboard: React.FC = () => {
     const handleRightClick = (e: React.MouseEvent, cardId?: string) => {
         e.preventDefault();
         setSelectedCardId(cardId || null);
+        console.log('Right-click detected on:', cardId ? `Card ${cardId}` : 'Empty area'); // 調試用
         setContextMenu({
             x: e.clientX,
             y: e.clientY,
-            action: cardId ? 'delete' : (copiedCard ? 'paste' : 'add'), // 根據是否有複製的卡片決定行動
+            // action: cardId ? 'delete' : (copiedCard ? 'paste' : 'add'), // 根據是否有複製的卡片決定行動
+            actions: [
+                'add',
+                ...(copiedCard ? ['paste'] : []),
+                ...(cardId ? ['delete'] : [])
+            ] as ('add' | 'delete' | 'paste')[]
         });
     };
 
@@ -194,6 +200,7 @@ const Whiteboard: React.FC = () => {
         <div
             className="relative w-full h-screen bg-white outline-none"
             onContextMenu={(e) => handleRightClick(e)}
+            onClick={() => setContextMenu(null)} // 左鍵點擊取消選單
             onKeyDown={handleKeyDown}
             tabIndex={0}
         >
@@ -208,6 +215,7 @@ const Whiteboard: React.FC = () => {
                     isSelected={card._id === selectedCardId}
                     onSelect={handleSelectCard}
                     onCopyCard={handleCopyCard} 
+                    onRightClick={(e) => handleRightClick(e, card._id)}
                 />
             ))}
 
@@ -233,14 +241,15 @@ const Whiteboard: React.FC = () => {
                     style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
                     onClick={(e) => e.stopPropagation()} // Prevent event bubbling
                 >
-                    {contextMenu.action === 'add' ? (
+                    {contextMenu.actions.includes('add')  && (
                         <div
                             className="py-1 px-2 hover:bg-gray-700"
                             onClick={() => addCard(contextMenu.x, contextMenu.y)}
                         >
                             新增卡片
                         </div>
-                    ) : contextMenu.action === 'paste' ? (
+                    )}
+                    {contextMenu.actions.includes('paste')  && (
                         <div
                             className="py-1 px-2 hover:bg-gray-700"
                             onClick={() => {
@@ -252,13 +261,12 @@ const Whiteboard: React.FC = () => {
                         >
                             複製卡片
                         </div>
-                    ) : (
+                    )} 
+                    {selectedCardId && (
                         <div
                             className="py-1 px-2 hover:bg-gray-700"
                             onClick={() => {
-                                if (selectedCardId) {
                                     deleteCardHandler(selectedCardId);
-                                }
                             }}
                         >
                             刪除卡片
