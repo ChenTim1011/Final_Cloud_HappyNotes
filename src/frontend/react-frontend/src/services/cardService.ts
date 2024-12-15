@@ -4,6 +4,10 @@ import { CardData } from '@/interfaces/Card/CardData';
 
 const API_BASE_URL = 'http://localhost:3000/api/cards'; // according to your backend API
 
+interface PatchCardUpdate {
+    id: string;
+    changes: Partial<CardData>;
+}
 
 const handleRequestError = async (response: Response, defaultMessage: string) => {
     const contentType = response.headers.get('content-type');
@@ -95,6 +99,29 @@ export const deleteCard = async (id: string): Promise<void> => {
         }
     } catch (error) {
         console.error('Error deleting card:', error);
+        throw error;
+    }
+};
+
+export const patchCardsBatch = async (updates: PatchCardUpdate[]): Promise<void> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/batch`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ updates }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('批量更新卡片失敗:', errorData);
+            throw new Error(errorData.message || '批量更新卡片失敗');
+        }
+
+
+    } catch (error) {
+        console.error('批量更新卡片失敗:', error);
         throw error;
     }
 };
