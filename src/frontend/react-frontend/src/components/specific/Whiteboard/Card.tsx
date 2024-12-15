@@ -15,6 +15,7 @@ interface CardProps extends CardData {
     isSelected: boolean; 
     onSelect: (cardId: string) => void; 
     onCopyCard: (card: CardData) => void; 
+    onRightClick?: (e: React.MouseEvent, cardId: string) => void;
 }
 
 const Card: React.FC<CardProps> = React.memo(({ 
@@ -34,6 +35,7 @@ const Card: React.FC<CardProps> = React.memo(({
     isSelected, 
     onSelect, 
     onCopyCard,
+    onRightClick,
 }) => {
     // Local state for editing mode and input values
     const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -282,6 +284,11 @@ const Card: React.FC<CardProps> = React.memo(({
             }}  
             className={`${isSelected ? 'ring-4 ring-blue-500' : ''}`}   
             disableDragging={false} // Allow dragging 
+            onContextMenu={(e) => {
+                //e.preventDefault(); // 阻止預設右鍵菜單
+                e.stopPropagation(); // 防止事件冒泡
+                onRightClick?.(e, _id); // 調用父層傳入的 onRightClick 回調，並傳遞卡片的 ID
+            }}
         >  
             <div  
                 className={`bg-blue-100 border border-blue-300 p-4 rounded shadow relative h-full w-full flex flex-col`}  
@@ -377,7 +384,7 @@ const Card: React.FC<CardProps> = React.memo(({
                                     content={editedContent}
                                     handleContentChange2={handleContentChange2}
                                 />
-                                {/* Textarea for editing the card content */}  
+                                {/* Textarea for editing the card content  
                                 <textarea  
                                     ref={textAreaRef}  
                                     placeholder="Enter content here"  
@@ -385,7 +392,7 @@ const Card: React.FC<CardProps> = React.memo(({
                                     onChange={handleContentChange}  
                                     className="w-full p-2 border rounded resize-none" 
                                     style={{ overflow: 'auto', boxSizing: 'border-box', transition: 'none' }}  
-                                />  
+                                />   */}
                             </> 
                         )} 
 
