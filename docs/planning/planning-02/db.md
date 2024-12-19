@@ -111,8 +111,8 @@
 
 卡片之間為多對多關係
 
-- 當您要建立兩張卡片的關聯時，您只需將對方的 `ObjectId` 添加到 `related_cards` 陣列中。
-- 例如，如果 `Card A` 與 `Card B` 有關聯，則您可以將 `Card B` 的 `_id` 放入 `Card A` 的 `related_cards` 陣列，反之亦然。
+- 當您要建立兩張卡片的關聯時，您只需將對方的 `ObjectId` 添加到 `cards` 陣列中。
+- 例如，如果 `Card A` 與 `Card B` 有關聯，則您可以將 `Card B` 的 `_id` 放入 `Card A` 的 `cards` 陣列，反之亦然。
 - 這種方式適合卡片之間的關聯數量不多的情況。
 
 #### 優缺點

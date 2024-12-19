@@ -1,4 +1,6 @@
-import React, { useState, useRef } from "react";
+// src/components/specific/Card/text-editor/quilleditor.tsx
+
+import React, { useState, useRef, useEffect } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css"; // Quill 樣式
 
@@ -31,9 +33,18 @@ const modules = {
 interface QuillEditorProps {
   content: string; // Initial content of the editor
   handleContentChange2: (content: string) => void; // Callback when content changes
+  readOnly?: boolean; // 是否為只讀模式
+  theme?: "snow" | "bubble"; // Quill 主題
+  onHeightChange?: (height: number) => void; // Callback for height changes
 }
 
-const QuillEditor: React.FC<QuillEditorProps> = ({ content, handleContentChange2 }) => {
+const QuillEditor: React.FC<QuillEditorProps> = ({ 
+  content, 
+  handleContentChange2,
+  readOnly = false,
+  theme = "snow",
+  onHeightChange
+}) => {
   const [value, setValue] = useState<string>(content); // State to manage editor content
   const editorRef = useRef<HTMLDivElement>(null); // Reference to the editor container
 
@@ -43,40 +54,41 @@ const QuillEditor: React.FC<QuillEditorProps> = ({ content, handleContentChange2
     handleContentChange2(content); // Trigger the callback to propagate changes
   };
 
-  // Handle mouse drag for vertical scrolling
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    let startY = e.clientY;
-    const startScrollTop = editor.scrollTop;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - startY;
-      editor.scrollTop = startScrollTop - deltaY;
-    };
-
-    const handleMouseUp = () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  };
+  // Use useEffect to adjust editor height based on content
+  useEffect(() => {
+    if (editorRef.current) {
+      const editor = editorRef.current.querySelector(".ql-editor");
+      if (editor) {
+        // Reset height to auto to recalculate
+        (editor as HTMLElement).style.height = "auto";
+        // Set new height based on scrollHeight
+        const newHeight = Math.max(editor.scrollHeight, 400);
+        editorRef.current.style.height = `${newHeight}px`;
+        // Call onHeightChange callback if provided
+        if (onHeightChange) {
+          onHeightChange(newHeight);
+        }
+      }
+    }
+  }, [value, readOnly, onHeightChange]);
 
   return (
     <div
       ref={editorRef}
-      onMouseDown={handleMouseDown}
-      className="border border-gray-300 p-2 min-h-[400px] max-h-[600px] overflow-y-auto cursor-grab scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
+      className={`border border-gray-300 p-2 overflow-hidden ${
+        readOnly ? "cursor-default" : "cursor-text"
+      }`}
+      style={{ minHeight: "150px" }} // Set minimum height
     >
       <ReactQuill
         value={value}
         onChange={handleChange}
-        modules={modules}
+        modules={readOnly ? {} : modules}
         formats={formats}
-        placeholder="Please enter content..."
+        placeholder="請輸入內容..."
+        readOnly={readOnly}
+        theme={theme}
+        style={{ height: "auto" }} // Allow Quill editor to adjust height based on content
       />
     </div>
   );

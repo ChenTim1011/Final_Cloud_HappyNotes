@@ -25,22 +25,21 @@ const Map: React.FC = () => {
                     if (!wb._id) {
                         throw new Error('Whiteboard data does not have an ID');
                     }
-                    return wb;
-                });
-                setWhiteboards(validatedData);
-                setLoading(false);
-            } catch (err) {
-                console.error('Failed to fetch whiteboards:', err);
-                setError('Failed to fetch whiteboards');
-                setLoading(false);
-            }
-        };
-
-        fetchWhiteboardsData();
-    }, []);
-
-    // Handle the creation of a new whiteboard
-    const handleCreateWhiteboard = async (e: FormEvent) => {
+                                    return wb;
+                                });
+                                setWhiteboards(validatedData);
+                                setLoading(false);
+                            } catch (err: any) {
+                                console.error('Failed to fetch whiteboards:', err);
+                                setError(err.message || 'Failed to fetch whiteboards');
+                                setLoading(false);
+                            }
+                        };
+                
+                        fetchWhiteboardsData();
+                    }, []);
+                
+                    const handleCreateWhiteboard = async (e: FormEvent) => {
         e.preventDefault();
     
         if (newWhiteboardTitle.trim() === '') {
@@ -186,7 +185,9 @@ const Map: React.FC = () => {
                                 </div>
                             )) || null }
                             {whiteboard.cards.length > 10 && (
-                                <span className="text-gray-500">...</span>
+                                <div className="inline-block bg-gray-500 text-white px-2 py-1 mr-2 mb-2 rounded text-sm">
+                                    ...
+                                </div>
                             )}
                         </div>
                     </div>
@@ -249,5 +250,6 @@ const Map: React.FC = () => {
         </div>
     );
 };
+           
 
 export default Map;

@@ -1,4 +1,4 @@
-const Card = require("../models/Card"); // import the Card model
+const Card = require("../models/Card");
 
 // Get all cards
 const GET_CARDS = async (req, res) => {
@@ -31,7 +31,7 @@ const POST_CARD = async (req, res) => {
       content,
       dueDate,
       tag,
-      foldOrNot: false, // card is not folded by default
+      foldOrNot: false,
       createdAt: new Date(),
       updatedAt: new Date(),
       position,
@@ -39,14 +39,12 @@ const POST_CARD = async (req, res) => {
       connection,
     });
     const savedCard = await newCard.save();
-    const formattedCard = {
-      ...savedCard.toObject(),
-    };
-    res.status(201).json(formattedCard);
+    res.status(201).json(savedCard.toObject());
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Failed to create card", details: error.message });
+    res.status(400).json({
+      error: "Failed to create card",
+      details: error.message,
+    });
   }
 };
 
@@ -77,19 +75,17 @@ const PUT_CARD = async (req, res) => {
         connection,
         updatedAt: new Date(),
       },
-      { new: true } // Return the updated document
+      { new: true }
     );
     if (!updatedCard) {
       return res.status(404).json({ error: "Card not found" });
     }
-    const formattedCard = {
-      ...updatedCard.toObject(),
-    };
-    res.json(formattedCard);
+    res.json(updatedCard.toObject());
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Failed to update card", details: error.message });
+    res.status(400).json({
+      error: "Failed to update card",
+      details: error.message,
+    });
   }
 };
 
@@ -107,4 +103,109 @@ const DELETE_CARD = async (req, res) => {
   }
 };
 
-module.exports = { GET_CARDS, POST_CARD, PUT_CARD, DELETE_CARD }; // export the controller functions
+// PATCH a card by ID
+const PATCH_CARD = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { changes } = req.body;
+
+    if (!changes || Object.keys(changes).length === 0) {
+      return res.status(400).json({ error: "No changes provided" });
+    }
+
+    const currentCard = await Card.findById(id);
+    if (!currentCard) {
+      return res.status(404).json({ error: "Card not found" });
+    }
+
+    const updates = {
+      updatedAt: new Date(),
+    };
+
+    const allowedFields = [
+      "cardTitle",
+      "content",
+      "dueDate",
+      "tag",
+      "foldOrNot",
+    ];
+
+    allowedFields.forEach((field) => {
+      if (
+        changes[field] !== undefined &&
+        changes[field] !== currentCard[field]
+      ) {
+        updates[field] = changes[field];
+      }
+    });
+
+    if (changes.position) {
+      if (
+        changes.position.x !== currentCard.position.x ||
+        changes.position.y !== currentCard.position.y
+      ) {
+        updates.position = changes.position;
+      }
+    }
+
+    if (changes.dimensions) {
+      if (
+        changes.dimensions.width !== currentCard.dimensions.width ||
+        changes.dimensions.height !== currentCard.dimensions.height
+      ) {
+        updates.dimensions = changes.dimensions;
+      }
+    }
+
+    if (Object.keys(updates).length === 1) {
+      return res.json(currentCard);
+    }
+
+    const updatedCard = await Card.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true }
+    );
+
+    res.json(updatedCard.toObject());
+  } catch (error) {
+    console.error("Error updating card:", error);
+    res.status(400).json({
+      error: "Failed to update card",
+      details: error.message,
+    });
+  }
+};
+
+// PATCH_CARDS_BATCH
+const PATCH_CARDS_BATCH = async (req, res) => {
+  const { updates } = req.body;
+
+  if (!updates || !Array.isArray(updates)) {
+    return res.status(400).json({ message: "Invalid updates format." });
+  }
+
+  try {
+    const bulkOperations = updates.map((update) => ({
+      updateOne: {
+        filter: { _id: update.id },
+        update: { $set: update.changes },
+      },
+    }));
+
+    await Card.bulkWrite(bulkOperations);
+    res.status(200).json({ message: "Batch update successful." });
+  } catch (error) {
+    console.error("Batch update failed:", error);
+    res.status(500).json({ message: "Batch update failed.", error });
+  }
+};
+
+module.exports = {
+  GET_CARDS,
+  POST_CARD,
+  PUT_CARD,
+  DELETE_CARD,
+  PATCH_CARD,
+  PATCH_CARDS_BATCH,
+};
