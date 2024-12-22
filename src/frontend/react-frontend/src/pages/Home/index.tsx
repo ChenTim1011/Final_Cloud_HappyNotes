@@ -16,12 +16,12 @@ const Home: React.FC = () => {
       {/* Title with large font size and black text */}
       <h1 className="text-[15vh] text-black m-0">HappyNote</h1>
 
-      {/* Button to navigate to the /map page when clicked */}
+      {/* Button to login when clicked */}
       <button
         className="mt-14 px-5 py-2 text-xl cursor-pointer bg-black text-white border-none rounded transition-colors duration-300 hover:bg-blueviolet"
-        onClick={() => navigate('/map')}
+        onClick={() => navigate('/auth/login')}
       >
-        Go to Map
+        登入
       </button>
     </div>
   );
