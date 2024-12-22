@@ -1,13 +1,18 @@
 // Map.tsx - Displays a map of whiteboards and allows users to create and delete whiteboards
 
 import React, { useState, useEffect, FormEvent, Fragment } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
+import { UserData } from '@/interfaces/User/UserData';
+import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
+import { getUserByName, updateUser} from '@/services/userService';
 import { getAllWhiteboards, createWhiteboard, deleteWhiteboardById } from '@/services/whiteboardService';
 import  Sidebar  from '@/components/common/sidebar';
 
 const Map: React.FC = () => {
     const navigate = useNavigate();
+    const { userName } = useParams<{ userName: string }>();
+    const [users, setUsers] = useState<UserData[]>([]);
     const [whiteboards, setWhiteboards] = useState<WhiteboardData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -19,27 +24,30 @@ const Map: React.FC = () => {
     useEffect(() => {
         const fetchWhiteboardsData = async () => {
             try {
-                const data = await getAllWhiteboards();
+                const users = await getUserByName(userName);
+                setUsers(users);
+                const data = users[0].whiteboards;
+
                 // Validate the data
                 const validatedData = data.map(wb => {
                     if (!wb._id) {
                         throw new Error('Whiteboard data does not have an ID');
                     }
-                                    return wb;
-                                });
-                                setWhiteboards(validatedData);
-                                setLoading(false);
-                            } catch (err: any) {
-                                console.error('Failed to fetch whiteboards:', err);
-                                setError(err.message || 'Failed to fetch whiteboards');
-                                setLoading(false);
-                            }
-                        };
+                    return wb;
+                });
+                setWhiteboards(validatedData);
+                setLoading(false);
+            } catch (err: any) {
+                console.error('Failed to fetch whiteboards:', err);
+                setError(err.message || 'Failed to fetch whiteboards');
+                setLoading(false);
+            }
+        };
                 
-                        fetchWhiteboardsData();
-                    }, []);
+        fetchWhiteboardsData();
+    }, []);
                 
-                    const handleCreateWhiteboard = async (e: FormEvent) => {
+    const handleCreateWhiteboard = async (e: FormEvent) => {
         e.preventDefault();
     
         if (newWhiteboardTitle.trim() === '') {
@@ -48,7 +56,7 @@ const Map: React.FC = () => {
         }
     
         // TODO: Replace this hardcoded user ID with an actual one from authentication
-        const userId = '1';
+        const userId = users[0]._id;
 
         // Ensure contextMenu is not null
         if (!contextMenu) {
@@ -70,14 +78,32 @@ const Map: React.FC = () => {
         try {
             // Create the whiteboard and update state
             const createdWhiteboard = await createWhiteboard(whiteboardData);
-            setWhiteboards([...whiteboards, createdWhiteboard]);
+            const updatedWhiteboards = [...whiteboards, createdWhiteboard];
+            setWhiteboards(updatedWhiteboards);
             setNewWhiteboardTitle('');
             setNewWhiteboardPrivate(false);
             setContextMenu(null);
+
+            const updateduser: UserUpdateData = {
+                userName: users[0].userName,
+                userPassword: users[0].userPassword,
+                email: users[0].email,
+                isLoggedin: users[0].isLoggedin,
+                whiteboards: updatedWhiteboards,
+            };
+            
+            // console.log(updateduser.whiteboards);
+            try {
+                await updateUser(users[0]._id,updateduser);
+            } catch (err: any) {
+                console.error('Failed to create whiteboard:', err);
+                alert(err.message || 'Failed to create whiteboard');
+            }
         } catch (err: any) {
             console.error('Failed to create whiteboard:', err);
             alert(err.message || 'Failed to create whiteboard');
         }
+
     };
 
     // Handle deleting a whiteboard
@@ -86,11 +112,28 @@ const Map: React.FC = () => {
             try {
                 await deleteWhiteboardById(id);
                 // Update state to remove the deleted whiteboard
-                setWhiteboards(whiteboards.filter((wb) => wb._id !== id));
+                const updatedWhiteboards = whiteboards.filter((wb) => wb._id !== id);
+                setWhiteboards(updatedWhiteboards);
+                
+                const updateduser: UserUpdateData = {
+                    userName: users[0].userName,
+                    userPassword: users[0].userPassword,
+                    email: users[0].email,
+                    isLoggedin: users[0].isLoggedin,
+                    whiteboards: updatedWhiteboards,
+                };
+        
+                try {
+                    await updateUser(users[0]._id,updateduser);
+                } catch (err: any) {
+                    console.error('Failed to create whiteboard:', err);
+                    alert(err.message || 'Failed to create whiteboard');
+                }
             } catch (err: any) {
                 console.error('Failed to delete whiteboard:', err);
                 alert(err.message || 'Failed to delete whiteboard');
             }
+
         }
     };
 
@@ -133,7 +176,7 @@ const Map: React.FC = () => {
             <div className="flex">
     
                 <div className="mt-0 ml-0 flex-shrink-0">
-                    <Sidebar />
+                    <Sidebar userName={userName}/>
                 </div>
 
                 <div className="flex-grow ml-5"> 

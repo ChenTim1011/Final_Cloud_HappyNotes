@@ -3,6 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const whiteboardRoutes = require("./routes/whiteboardRoutes");
 const cardRoutes = require("./routes/cardRoutes");
+const userRoutes = require("./routes/userRoutes");
+const loginRoutes = require("./routes/loginRoutes");
 
 const app = express();
 
@@ -18,6 +20,8 @@ app.use(
 app.use(express.json());
 app.use("/api/whiteboards", whiteboardRoutes);
 app.use("/api/cards", cardRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/auth", loginRoutes);
 
 const PORT = 3000;
 app.listen(PORT, () => {
