@@ -14,7 +14,7 @@ import { UserData } from '@/interfaces/User/UserData';
 
 const Whiteboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const [user, setUser] = useState<UserData | null>(null);
+    const [users, setUsers] = useState<UserData[]>([]);
     const [whiteboard, setWhiteboard] = useState<WhiteboardData | null>(null);
     const [cards, setCards] = useState<CardData[]>([]);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -42,7 +42,7 @@ const Whiteboard: React.FC = () => {
 
                         // Fetch the owner of the whiteboard
                         const user = await getUserById(fetchedWhiteboard.userId);
-                        setUser(user);
+                        setUsers([...users, user]);
 
                         // Ensure whiteboard.cards is an array
                         if (!Array.isArray(fetchedWhiteboard.cards)) {
@@ -251,7 +251,7 @@ const Whiteboard: React.FC = () => {
             <div className="flex">
                 
                 <div className="mt-0 ml-0 flex-shrink-0">
-                    <Sidebar userName={user?.userName}/>
+                    <Sidebar users={users}/>
                 </div>
 
                 <div className="flex-grow ml-5"> 
