@@ -6,12 +6,12 @@ import { UserData } from '@/interfaces/User/UserData';
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
 
 interface SidebarProps{
-   userName: string | null | undefined;
+   users: UserData[];
 }
 
-const Sidebar: React.FC<SidebarProps> = ({userName}) => {
+const Sidebar: React.FC<SidebarProps> = ({users}) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [users, setUsers] = useState<UserData[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserData>(users[0]);
 
   // Use the useNavigate hook to handle page navigation
   const navigate = useNavigate();
@@ -23,19 +23,18 @@ const Sidebar: React.FC<SidebarProps> = ({userName}) => {
   };
 
   const logout = async() =>{
-    const users = await getUserByName(userName);
-    setUsers(users)
+    setCurrentUser(users[0]);
     const updateduser: UserUpdateData = {
-        userName: users[0].userName,
-        userPassword: users[0].userPassword,
-        email: users[0].email,
+        userName: currentUser.userName,
+        userPassword: currentUser.userPassword,
+        email: currentUser.email,
         isLoggedin: false,
-        whiteboards: users[0].whiteboards,
+        whiteboards: currentUser.whiteboards,
     };
     
-    // console.log(updateduser.whiteboards);
+
     try {
-        await updateUser(users[0]._id,updateduser);
+        await updateUser(currentUser._id,updateduser);
     } catch (err: any) {
         console.error('Failed to log out:', err);
         alert(err.message || 'Failed to log out');
@@ -69,6 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({userName}) => {
               className="mt-10 p-2 bg-gray-700 rounded-md text-center hover:bg-gray-600"
               onClick={() => { 
                 setIsOpen(false); 
+                logout(); 
                 navigate(`../..`);
               }}  // Close the sidebar when clicked
             >
@@ -80,12 +80,12 @@ const Sidebar: React.FC<SidebarProps> = ({userName}) => {
               className="p-2 bg-gray-700 rounded-md text-center hover:bg-gray-600"
               onClick={() => { 
                 setIsOpen(false); 
-                navigate(`../../map/${userName}`);
+                navigate(`../../map/${currentUser.userName}`);
               }}  // Close the sidebar when clicked
             >
               地圖
             </a>
-            {/* Link to Map Page */}
+            {/* Link to Log Out */}
             <a
               className="p-2 bg-red-700 rounded-md text-center hover:bg-red-600"
               onClick={() => { 

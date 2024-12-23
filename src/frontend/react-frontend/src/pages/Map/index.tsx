@@ -126,8 +126,8 @@ const Map: React.FC = () => {
                 try {
                     await updateUser(users[0]._id,updateduser);
                 } catch (err: any) {
-                    console.error('Failed to create whiteboard:', err);
-                    alert(err.message || 'Failed to create whiteboard');
+                    console.error('Failed to delete whiteboard:', err);
+                    alert(err.message || 'Failed to delete whiteboard');
                 }
             } catch (err: any) {
                 console.error('Failed to delete whiteboard:', err);
@@ -176,7 +176,7 @@ const Map: React.FC = () => {
             <div className="flex">
     
                 <div className="mt-0 ml-0 flex-shrink-0">
-                    <Sidebar userName={userName}/>
+                    <Sidebar users={users}/>
                 </div>
 
                 <div className="flex-grow ml-5"> 
