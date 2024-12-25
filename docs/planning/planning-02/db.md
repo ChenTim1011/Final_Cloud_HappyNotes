@@ -25,6 +25,7 @@
     userName: { type: String, required: true },
     userPassword: { type: String, required: true },
     email: { type: String, required: true },
+    isLoggedin: {type: Boolean, require: true, default: false},
     whiteboards: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Whiteboard' }],
     activityLog: [
         {

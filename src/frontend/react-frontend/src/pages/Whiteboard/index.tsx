@@ -5,13 +5,16 @@ import { useParams } from 'react-router-dom';
 import Card from '@/components/specific/Whiteboard/Card';
 import { CardData } from '@/interfaces/Card/CardData';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
+import { getUserById } from '@/services/userService';
 import { getWhiteboardById, updateWhiteboard } from '@/services/whiteboardService';
 import { deleteCard, createCard, updateCard } from '@/services/cardService';
 import Sidebar from '@/components/common/sidebar';
 import { toast } from 'react-toastify';
+import { UserData } from '@/interfaces/User/UserData';
 
 const Whiteboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const [users, setUsers] = useState<UserData[]>([]);
     const [whiteboard, setWhiteboard] = useState<WhiteboardData | null>(null);
     const [cards, setCards] = useState<CardData[]>([]);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -36,6 +39,11 @@ const Whiteboard: React.FC = () => {
                     setWhiteboard(fetchedWhiteboard);
 
                     if (fetchedWhiteboard && fetchedWhiteboard._id) {
+
+                        // Fetch the owner of the whiteboard
+                        const user = await getUserById(fetchedWhiteboard.userId);
+                        setUsers([...users, user]);
+
                         // Ensure whiteboard.cards is an array
                         if (!Array.isArray(fetchedWhiteboard.cards)) {
                             fetchedWhiteboard.cards = [];
@@ -243,7 +251,7 @@ const Whiteboard: React.FC = () => {
             <div className="flex">
                 
                 <div className="mt-0 ml-0 flex-shrink-0">
-                    <Sidebar />
+                    <Sidebar users={users}/>
                 </div>
 
                 <div className="flex-grow ml-5"> 
