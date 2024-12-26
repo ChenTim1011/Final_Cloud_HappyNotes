@@ -80,7 +80,6 @@ const Card: React.FC<CardProps> = React.memo(({
     const handleSave = useCallback(() => {
         if (_id) {
             const changes: Partial<CardData> = {
-                tag: tag,
                 cardTitle: editedTitle,
                 content: editedContent,
                 dimensions: localDimensions,

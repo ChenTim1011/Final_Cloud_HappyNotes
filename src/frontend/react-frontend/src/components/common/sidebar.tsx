@@ -1,46 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { FaBars } from 'react-icons/fa';  // Using Font Awesome for the toggle icon
+// components/common/sidebar.tsx
+import React, { useState } from 'react';
+import { FaBars } from 'react-icons/fa';
 import { useNavigate } from "react-router-dom";
-import { getUserByName, updateUser} from '@/services/userService';
-import { UserData } from '@/interfaces/User/UserData';
+import { updateUser } from '@/services/userService';
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
+import { useUser } from '@/contexts/UserContext';
+import { toast } from 'react-toastify';
 
-interface SidebarProps{
-   users: UserData[];
-}
-
-const Sidebar: React.FC<SidebarProps> = ({users}) => {
+const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<UserData>(users[0]);
-
-  // Use the useNavigate hook to handle page navigation
   const navigate = useNavigate();
-
-
+  const { currentUser, setCurrentUser } = useUser();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
 
-  const logout = async() =>{
-    setCurrentUser(users[0]);
+  const logout = async() => {
+    if (!currentUser) return;
+
     const updateduser: UserUpdateData = {
-        userName: currentUser.userName,
-        userPassword: currentUser.userPassword,
-        email: currentUser.email,
-        isLoggedin: false,
-        whiteboards: currentUser.whiteboards,
+      userName: currentUser.userName,
+      userPassword: currentUser.userPassword,
+      email: currentUser.email,
+      isLoggedin: false,
+      whiteboards: currentUser.whiteboards,
     };
     
 
     try {
-        await updateUser(currentUser._id,updateduser);
+      await updateUser(currentUser._id, updateduser);
+      setCurrentUser(null);
+      toast.success('登出成功！');
+      navigate('/auth/login');
     } catch (err: any) {
-        console.error('Failed to log out:', err);
-        alert(err.message || 'Failed to log out');
+      console.error('Failed to log out:', err);
+      toast.error('登出失敗，請稍後再試');
     }
+  };
+
+  // Show a simple sidebar with a hamburger menu button if the user is not logged in
+  if (!currentUser) {
+    return (
+      <div>
+        <div className="relative">
+          <button
+            type="button"
+            title="Toggle Sidebar"
+            onClick={() => navigate('/auth/login')}
+            className="p-2 absolute top-0 left-0 z-50 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition-colors duration-200"
+          >
+            <FaBars size={24} />
+          </button>
+        </div>
+      </div>
+    );
   }
 
+  // Show the sidebar with user information and navigation options if the user is logged in
   return (
     <div>
       {/* Sidebar container */}
@@ -50,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({users}) => {
           type="button"
           title="Toggle Sidebar"
           onClick={toggleSidebar}
-          className="p-2 absolute top-0 left-0 z-50 bg-gray-800 text-white rounded-md"
+          className="p-2 absolute top-0 left-0 z-50 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition-colors duration-200"
         >
           <FaBars size={24} />
         </button>
@@ -58,41 +75,46 @@ const Sidebar: React.FC<SidebarProps> = ({users}) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full bg-gray-800 text-white transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed left-0 top-0 h-full bg-gray-800 text-white transform transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
         style={{ width: '250px', zIndex: 40 }}
       >
         <div className="p-4">
           <div className="flex flex-col space-y-4">
-            {/* Link to Homepage */}
-            <a
-              className="mt-10 p-2 bg-gray-700 rounded-md text-center hover:bg-gray-600"
-              onClick={() => { 
-                setIsOpen(false); 
-                logout(); 
-                navigate(`../..`);
-              }}  // Close the sidebar when clicked
-            >
-              回到首頁
-            </a>
+            {/* User Information */}
+            <div className="mt-10 p-4 bg-gray-700 rounded-md">
+              <p className="text-sm text-gray-300">使用者</p>
+              <p className="font-medium">{currentUser.userName}</p>
+            </div>
 
-            {/* Link to Map Page */}
+    
             <a
-              className="p-2 bg-gray-700 rounded-md text-center hover:bg-gray-600"
-              onClick={() => { 
-                setIsOpen(false); 
-                navigate(`../../map/${currentUser.userName}`);
-              }}  // Close the sidebar when clicked
+              className="p-2 bg-gray-700 rounded-md text-center hover:bg-gray-600 cursor-pointer transition-colors duration-200"
+              onClick={() => {
+                setIsOpen(false);
+                navigate(`/map/${currentUser.userName}`);
+              }}
             >
               地圖
             </a>
+
+            <a
+              className="p-2 bg-gray-700 rounded-md text-center hover:bg-gray-600 cursor-pointer transition-colors duration-200"
+              onClick={() => {
+                setIsOpen(false);
+                navigate(`/management/${currentUser.userName}`);
+              }}
+            >
+              管理卡片
+            </a>
             {/* Link to Log Out */}
             <a
-              className="p-2 bg-red-700 rounded-md text-center hover:bg-red-600"
-              onClick={() => { 
+              className="p-2 bg-red-700 rounded-md text-center hover:bg-red-600 cursor-pointer transition-colors duration-200"
+              onClick={async () => {
                 setIsOpen(false);
-                logout(); 
-                navigate(`../../auth/login`);
-              }}  // Close the sidebar and log out when clicked
+                await logout();
+              }}
             >
               登出
             </a>

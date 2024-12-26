@@ -26,7 +26,7 @@ const Map: React.FC = () => {
             try {
                 const users = await getUserByName(userName);
                 setUsers(users);
-                const data = users[0].whiteboards;
+                const data = users[0].whiteboards as WhiteboardData[]; 
 
                 // Validate the data
                 const validatedData = data.map(wb => {
@@ -45,8 +45,7 @@ const Map: React.FC = () => {
         };
                 
         fetchWhiteboardsData();
-    }, []);
-                
+    }, [userName]); 
     const handleCreateWhiteboard = async (e: FormEvent) => {
         e.preventDefault();
     
@@ -55,7 +54,12 @@ const Map: React.FC = () => {
             return;
         }
     
-        // TODO: Replace this hardcoded user ID with an actual one from authentication
+      
+        if (users.length === 0) {
+            alert('User data is not available.');
+            return;
+        }
+
         const userId = users[0]._id;
 
         // Ensure contextMenu is not null
@@ -84,7 +88,8 @@ const Map: React.FC = () => {
             setNewWhiteboardPrivate(false);
             setContextMenu(null);
 
-            const updateduser: UserUpdateData = {
+            // Update user whiteboards
+            const updatedUser: UserUpdateData = {
                 userName: users[0].userName,
                 userPassword: users[0].userPassword,
                 email: users[0].email,
@@ -92,9 +97,8 @@ const Map: React.FC = () => {
                 whiteboards: updatedWhiteboards,
             };
             
-            // console.log(updateduser.whiteboards);
             try {
-                await updateUser(users[0]._id,updateduser);
+                await updateUser(users[0]._id, updatedUser);
             } catch (err: any) {
                 console.error('Failed to create whiteboard:', err);
                 alert(err.message || 'Failed to create whiteboard');
@@ -115,7 +119,7 @@ const Map: React.FC = () => {
                 const updatedWhiteboards = whiteboards.filter((wb) => wb._id !== id);
                 setWhiteboards(updatedWhiteboards);
                 
-                const updateduser: UserUpdateData = {
+                const updatedUser: UserUpdateData = {
                     userName: users[0].userName,
                     userPassword: users[0].userPassword,
                     email: users[0].email,
@@ -124,7 +128,7 @@ const Map: React.FC = () => {
                 };
         
                 try {
-                    await updateUser(users[0]._id,updateduser);
+                    await updateUser(users[0]._id, updatedUser);
                 } catch (err: any) {
                     console.error('Failed to delete whiteboard:', err);
                     alert(err.message || 'Failed to delete whiteboard');
@@ -176,7 +180,7 @@ const Map: React.FC = () => {
             <div className="flex">
     
                 <div className="mt-0 ml-0 flex-shrink-0">
-                    <Sidebar users={users}/>
+                    <Sidebar/>
                 </div>
 
                 <div className="flex-grow ml-5"> 
@@ -217,7 +221,7 @@ const Map: React.FC = () => {
                         {/* Display the number of cards on this whiteboard */}
                         <p className="mt-2">Number of Cards: {whiteboard.cards?.length || 0}</p>
 
-                        {/* Display up to two card IDs, if more than two, show an ellipsis */}
+                        {/* Display up to twenty card IDs, if more than twenty, show an ellipsis */}
                         <div className="mt-3">
                             {whiteboard.cards?.slice(0, 20).map((card) => (
                                 <div
@@ -227,7 +231,7 @@ const Map: React.FC = () => {
                                      card {card._id}
                                 </div>
                             )) || null }
-                            {whiteboard.cards.length > 10 && (
+                            {whiteboard.cards.length > 20 && (
                                 <div className="inline-block bg-gray-500 text-white px-2 py-1 mr-2 mb-2 rounded text-sm">
                                     ...
                                 </div>
@@ -292,7 +296,7 @@ const Map: React.FC = () => {
             )}
         </div>
     );
+
 };
-           
 
 export default Map;
