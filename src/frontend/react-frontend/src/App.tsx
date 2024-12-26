@@ -7,6 +7,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; 
 import { CardData } from '@/interfaces/Card/CardData';
 import { getAllCards } from '@/services/cardService';
+import { UserProvider } from '@/contexts/UserContext';
 
 function App() {
   const [cards, setCards] = useState<CardData[]>([]);
@@ -25,11 +26,7 @@ function App() {
   }, [refreshCards]);
 
   return (
-    <BatchUpdateProvider
-      cards={cards}
-      setCards={setCards}
-      refreshCards={refreshCards}
-    >
+      <UserProvider>
       <AppRoutes />
       <ToastContainer 
         position="top-right" 
@@ -42,7 +39,7 @@ function App() {
         draggable 
         pauseOnHover 
       />
-    </BatchUpdateProvider>
+      </UserProvider>
   );
 }
 
