@@ -1,0 +1,44 @@
+/* src/components/specific/Management/Card.css */
+
+.card-container {
+    width: 200px; /* Adjusted to fit a 5-column layout */
+    height: 250px; /* Adjusted to fit a 4-row layout */
+    box-sizing: border-box;
+    padding: 8px; /* Added padding */
+    cursor: pointer;
+    transition: box-shadow 0.3s ease;
+}
+
+.card-container.selected {
+    box-shadow: 0 0 0 2px #3b82f6; /* Highlight the selected card */
+}
+
+.card-content {
+    background-color: #bfdbfe; /* bg-blue-100 */
+    border: 1px solid #93c5fd; /* border-blue-300 */
+    padding: 16px; /* p-4 */
+    border-radius: 0.5rem; /* rounded */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* shadow */
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden; /* Prevent content overflow */
+}
+
+.invisible {
+    visibility: hidden;
+}
+
+.content-wrapper {
+    flex: 1; /* Make the content area take up the remaining space */
+}
+
+.ql-editor {
+    font-size: 1rem; /* Increase font size */
+    line-height: 1.5;
+    word-wrap: break-word; /* Prevent long strings from overflowing */
+    white-space: pre-wrap; /* Preserve spaces and line breaks */
+    max-height: 100%; /* Limit the maximum height */
+}
