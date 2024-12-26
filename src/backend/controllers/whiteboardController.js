@@ -4,13 +4,17 @@ const Whiteboard = require("../models/Whiteboard");
 // Get all whiteboards
 const GET = async (req, res) => {
   try {
-    const whiteboards = await Whiteboard.find();
-    const formattedWhiteboards = whiteboards.map((whiteboard) => ({
-      ...whiteboard.toObject(),
-    }));
-    res.json(formattedWhiteboards);
+    const { userId } = req.query; // Get userId from query string
+    let whiteboards;
+
+    if (userId) {
+      // Only get whiteboards that belong to the user
+      whiteboards = await Whiteboard.find({ userId }).populate("cards"); // 若需要同時抓卡片內容，就 populate
+    }
+    return res.json(whiteboards);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch whiteboards" });
+    console.error(error);
+    return res.status(500).json({ error: "Failed to fetch whiteboards" });
   }
 };
 

@@ -1,7 +1,7 @@
 // src/pages/Whiteboard.tsx - Displays the whiteboard page with cards 
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Card from '@/components/specific/Whiteboard/Card';
 import { CardData } from '@/interfaces/Card/CardData';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
@@ -10,11 +10,12 @@ import { getWhiteboardById, updateWhiteboard } from '@/services/whiteboardServic
 import { deleteCard, createCard, updateCard } from '@/services/cardService';
 import Sidebar from '@/components/common/sidebar';
 import { toast } from 'react-toastify';
-import { UserData } from '@/interfaces/User/UserData';
+import { useUser } from '@/contexts/UserContext';
 
 const Whiteboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const [users, setUsers] = useState<UserData[]>([]);
+    const navigate = useNavigate();
+    const { currentUser, userLoading } = useUser();
     const [whiteboard, setWhiteboard] = useState<WhiteboardData | null>(null);
     const [cards, setCards] = useState<CardData[]>([]);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -31,42 +32,53 @@ const Whiteboard: React.FC = () => {
 
     // Fetch whiteboard and associated cards data when the component mounts or id changes
     useEffect(() => {
+        const checkAccess = async () => {
+          if (userLoading) {
+            // User data is still loading, do nothing
+            return;
+          }
+          if (!currentUser) {
+            toast.error('請先登入');
+            navigate('/auth/login');
+            return;
+          }
+          if (!id) {
+            toast.error('找不到白板');
+            navigate(`/map/${currentUser.userName}`);
+            return;
+          }
+        };
+    
+        checkAccess();
+      }, [currentUser, id, navigate, userLoading]);
+
+    // Fetch whiteboard data
+    useEffect(() => {
         const fetchData = async () => {
-            if (id) {
-                try {
-                    // Fetch the whiteboard data by ID
-                    const fetchedWhiteboard = await getWhiteboardById(id);
-                    setWhiteboard(fetchedWhiteboard);
+            if (!id || !currentUser) return;
 
-                    if (fetchedWhiteboard && fetchedWhiteboard._id) {
-
-                        // Fetch the owner of the whiteboard
-                        const user = await getUserById(fetchedWhiteboard.userId);
-                        setUsers([...users, user]);
-
-                        // Ensure whiteboard.cards is an array
-                        if (!Array.isArray(fetchedWhiteboard.cards)) {
-                            fetchedWhiteboard.cards = [];
-                        }
-
-                        // Set the cards for rendering
-                        setCards(fetchedWhiteboard.cards);
-                        setLoading(false);
-                    } else {
-                        console.error("Whiteboard data does not have an ID");
-                        setError('Whiteboard data is invalid');
-                        setLoading(false);
-                    }
-                } catch (err) {
-                    console.error('Failed to fetch whiteboard data:', err);
-                    setError('Failed to fetch whiteboard data');
-                    setLoading(false);
+            try {
+                const fetchedWhiteboard: WhiteboardData = await getWhiteboardById(id);
+                
+                // check if the current user has access to the whiteboard
+                if (fetchedWhiteboard.userId !== currentUser._id) {
+                    toast.error('沒有權限存取此白板');
+                    navigate(`/map/${currentUser.userName}`);
+                    return;
                 }
+
+                setWhiteboard(fetchedWhiteboard);
+                setCards(fetchedWhiteboard.cards);
+                setLoading(false);
+            } catch (err: any) {
+                console.error('Failed to fetch whiteboard data:', err);
+                setError('Failed to fetch whiteboard data');
+                setLoading(false);
             }
         };
 
         fetchData();
-    }, [id]);
+    }, [id, currentUser, navigate]);
 
     // Function to handle copying a card
     const handleCopyCard = (card: CardData) => {
@@ -251,7 +263,7 @@ const Whiteboard: React.FC = () => {
             <div className="flex">
                 
                 <div className="mt-0 ml-0 flex-shrink-0">
-                    <Sidebar users={users}/>
+                    <Sidebar/>
                 </div>
 
                 <div className="flex-grow ml-5"> 
