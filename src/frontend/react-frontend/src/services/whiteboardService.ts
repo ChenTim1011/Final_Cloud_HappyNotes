@@ -8,9 +8,14 @@ const API_BASE_URL = 'http://localhost:3000/api/whiteboards'; // according to yo
 
 
 
-// GET /api/whiteboards - Get all whiteboards
-export const getAllWhiteboards = async (): Promise<WhiteboardData[]> => {
-    const response = await fetch(API_BASE_URL, {
+// GET /api/whiteboards - Get all whiteboards or filter by userId
+export const getAllWhiteboards = async (userId?: string): Promise<WhiteboardData[]> => {
+    let url = API_BASE_URL;
+    if (userId) {
+        url += `?userId=${userId}`;
+    }
+
+    const response = await fetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',

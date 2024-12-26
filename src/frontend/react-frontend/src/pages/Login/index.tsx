@@ -6,6 +6,7 @@ import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
 import { updateUser, getUserByName} from '@/services/userService';
 import { authenticateUser } from "@/services/loginService";
 import { toast } from 'react-toastify';
+import { useUser } from '@/contexts/UserContext';
 
 const Login: React.FC = () => {
 
@@ -14,6 +15,7 @@ const Login: React.FC = () => {
 
   // Use the useNavigate hook to handle page navigation
   const navigate = useNavigate();
+  const { setCurrentUser } = useUser();
 
   const login = async () =>{
       try {
@@ -46,18 +48,31 @@ const Login: React.FC = () => {
               whiteboards: users[0].whiteboards,
           };
 
-          try {
-            const auth = await authenticateUser(userName, userPassword);
-            await updateUser(users[0]._id,updateduser);
-            toast.success('登入成功！');
-            navigate(`../../map/${auth.userName}`);
-          } catch (error) {
-            toast.error(
-                <div>
-                    帳號或密碼錯誤，請重新輸入
-                </div>,
-            );
-          }
+      try {
+        const auth = await authenticateUser(userName, userPassword);
+        await updateUser(users[0]._id, updateduser);
+        
+        // Set the current user in context
+        setCurrentUser({
+          _id: users[0]._id,
+          userName: users[0].userName,
+          userPassword: users[0].userPassword,
+          email: users[0].email,
+          isLoggedin: true,
+          whiteboards: users[0].whiteboards,
+          activityLog: users[0].activityLog || [], // Add activity log with default empty array
+          tags: users[0].tags || [], // Add tags with default empty array
+        });
+
+        toast.success('登入成功！');
+        navigate(`../../map/${auth.userName}`);
+      } catch (error) {
+        toast.error(
+          <div>
+            帳號或密碼錯誤，請重新輸入
+          </div>
+        );
+      }
 
       } catch(error) {
           // Catch errors and output the error message
