@@ -236,86 +236,81 @@ const Whiteboard: React.FC = () => {
 
     return (
         <div
-            ref={whiteboardRef} 
-            className="relative w-full h-screen bg-white outline-none"
-            onClick={() => setContextMenu(null)} 
-            onContextMenu={(e) => handleRightClick(e)}
-            onKeyDown={handleKeyDown}
-            tabIndex={0}
+          ref={whiteboardRef}
+          className="relative w-full min-h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0] outline-none"
+          onClick={() => setContextMenu(null)}
+          onContextMenu={(e) => handleRightClick(e)}
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
         >
-
-            {/* Card Rendering Section */}
-            {cards.map((card) => (
-                <Card
-                    key={card._id}
-                    {...card}
-                    onDelete={deleteCardHandler}
-                    isSelected={card._id === selectedCardId}
-                    onSelect={handleSelectCard}
-                    onCopyCard={handleCopyCard} 
-                    setCards={setCards} 
-                    setFullscreenCardId={setSelectedCardId} 
-                    onRightClick={(e) => handleRightClick(e, card._id)}
-                />
-            ))}
-
-            {/* Render the sidebar and the main content */}
-            <div className="flex">
-                
-                <div className="mt-0 ml-0 flex-shrink-0">
-                    <Sidebar/>
-                </div>
-
-                <div className="flex-grow ml-5"> 
-                    <h2 className="text-2xl text-center font-semibold p-5">
-                        {whiteboard ? whiteboard.whiteboardTitle : 'Loading...'}
-                    </h2>
-                
-                </div>
+          {/* Card Rendering Section */}
+          {cards.map((card) => (
+            <Card
+              key={card._id}
+              {...card}
+              onDelete={deleteCardHandler}
+              isSelected={card._id === selectedCardId}
+              onSelect={handleSelectCard}
+              onCopyCard={handleCopyCard}
+              setCards={setCards}
+              setFullscreenCardId={setSelectedCardId}
+              onRightClick={(e) => handleRightClick(e, card._id)}
+            />
+          ))}
+      
+          {/* Render the sidebar and the main content */}
+          <div className="flex">
+            <div className="mt-0 ml-0 flex-shrink-0">
+              <Sidebar />
             </div>
-
-            {/* Display the context menu for adding, deleting, or pasting cards */}
-            {contextMenu && (
+            <div className="flex-grow ml-5">
+              <h2 className="text-3xl font-serif font-bold text-center text-[#262220] py-5 tracking-wide">
+                {whiteboard ? whiteboard.whiteboardTitle : 'Loading...'}
+              </h2>
+            </div>
+          </div>
+      
+          {/* Display the context menu for adding, deleting, or pasting cards */}
+          {contextMenu && (
+            <div
+              className="absolute bg-[#262220] text-white p-3 rounded-lg z-50 shadow-lg cursor-pointer"
+              style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {contextMenu.actions && contextMenu.actions.includes('add') && (
                 <div
-                    className="absolute bg-gray-800 text-white p-2 rounded z-50 cursor-pointer"
-                    style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
-                    onClick={(e) => e.stopPropagation()} // Prevent event bubbling
+                  className="py-2 px-4 hover:bg-[#3E2C29] rounded"
+                  onClick={() => addCard(contextMenu.x, contextMenu.y)}
                 >
-                    {contextMenu.actions && contextMenu.actions.includes('add') && (
-                        <div
-                            className="py-1 px-2 hover:bg-gray-700"
-                            onClick={() => addCard(contextMenu.x, contextMenu.y)}
-                        >
-                            新增卡片
-                        </div>
-                    )}
-                    {contextMenu.actions &&  contextMenu.actions.includes('paste')  && (
-                        <div
-                            className="py-1 px-2 hover:bg-gray-700"
-                            onClick={() => {
-                                if (copiedCard) {
-                                    addCard(contextMenu.x, contextMenu.y, copiedCard);
-                                    // setCopiedCard(null);
-                                }
-                            }}
-                        >
-                            貼上卡片
-                        </div>
-                    )} 
-                    {selectedCardId && (
-                        <div
-                            className="py-1 px-2 hover:bg-gray-700"
-                            onClick={() => {
-                                    deleteCardHandler(selectedCardId);
-                            }}
-                        >
-                            刪除卡片
-                        </div>
-                    )} 
+                  新增卡片
                 </div>
-            )}
+              )}
+              {contextMenu.actions && contextMenu.actions.includes('paste') && (
+                <div
+                  className="py-2 px-4 hover:bg-[#3E2C29] rounded"
+                  onClick={() => {
+                    if (copiedCard) {
+                      addCard(contextMenu.x, contextMenu.y, copiedCard);
+                    }
+                  }}
+                >
+                  貼上卡片
+                </div>
+              )}
+              {selectedCardId && (
+                <div
+                  className="py-2 px-4 hover:bg-[#3E2C29] rounded"
+                  onClick={() => {
+                    deleteCardHandler(selectedCardId);
+                  }}
+                >
+                  刪除卡片
+                </div>
+              )}
+            </div>
+          )}
         </div>
-    );
+      );
 };
 
 export default Whiteboard;
