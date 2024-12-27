@@ -71,7 +71,7 @@ export const createWhiteboard = async (
 // PUT /api/whiteboards/:id - update the whiteboard with the specified ID
 export const updateWhiteboard = async (
     id: string,
-    updateData: WhiteboardUpdateData
+    updateData: Partial<WhiteboardUpdateData>
 ): Promise<WhiteboardData> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',

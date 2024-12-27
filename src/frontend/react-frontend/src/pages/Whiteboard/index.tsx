@@ -273,13 +273,13 @@ const Whiteboard: React.FC = () => {
           {/* Display the context menu for adding, deleting, or pasting cards */}
           {contextMenu && (
             <div
-              className="absolute bg-[#262220] text-white p-3 rounded-lg z-50 shadow-lg cursor-pointer"
+              className="absolute bg-white border border-[#C3A6A0] text-[#262220] p-3 rounded-lg z-50 shadow-lg cursor-pointer"
               style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
               onClick={(e) => e.stopPropagation()}
             >
               {contextMenu.actions && contextMenu.actions.includes('add') && (
                 <div
-                  className="py-2 px-4 hover:bg-[#3E2C29] rounded"
+                  className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
                   onClick={() => addCard(contextMenu.x, contextMenu.y)}
                 >
                   新增卡片
@@ -287,7 +287,7 @@ const Whiteboard: React.FC = () => {
               )}
               {contextMenu.actions && contextMenu.actions.includes('paste') && (
                 <div
-                  className="py-2 px-4 hover:bg-[#3E2C29] rounded"
+                  className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
                   onClick={() => {
                     if (copiedCard) {
                       addCard(contextMenu.x, contextMenu.y, copiedCard);
@@ -299,7 +299,7 @@ const Whiteboard: React.FC = () => {
               )}
               {selectedCardId && (
                 <div
-                  className="py-2 px-4 hover:bg-[#3E2C29] rounded"
+                  className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
                   onClick={() => {
                     deleteCardHandler(selectedCardId);
                   }}

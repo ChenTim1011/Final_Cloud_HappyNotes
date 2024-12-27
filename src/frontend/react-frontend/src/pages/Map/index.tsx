@@ -1,13 +1,16 @@
-// Map.tsx - Displays a map of whiteboards and allows users to create and delete whiteboards
+// src/pages/Map.tsx - Updated to include a context menu with "新增白板" option
 
-import React, { useState, useEffect, FormEvent, Fragment } from 'react';
+import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
+import { WhiteboardUpdateData } from '@/interfaces/Whiteboard/WhiteboardUpdateData';
+import { CreateWhiteboardData } from '@/interfaces/Whiteboard/CreateWhiteboardData';
 import { UserData } from '@/interfaces/User/UserData';
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
-import { getUserByName, updateUser} from '@/services/userService';
-import { getAllWhiteboards, createWhiteboard, deleteWhiteboardById } from '@/services/whiteboardService';
-import  Sidebar  from '@/components/common/sidebar';
+import { getUserByName, updateUser } from '@/services/userService';
+import { createWhiteboard, deleteWhiteboardById, updateWhiteboard } from '@/services/whiteboardService';
+import Sidebar from '@/components/common/sidebar';
+import { Rnd } from 'react-rnd';
 
 const Map: React.FC = () => {
     const navigate = useNavigate();
@@ -17,8 +20,10 @@ const Map: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+    const [isAdding, setIsAdding] = useState<boolean>(false); // New state to track if adding
     const [newWhiteboardTitle, setNewWhiteboardTitle] = useState<string>('');
     const [newWhiteboardPrivate, setNewWhiteboardPrivate] = useState<boolean>(false);
+    const draggedRef = useRef<boolean>(false); 
 
     // Fetch whiteboards data from the backend when the component mounts
     useEffect(() => {
@@ -26,14 +31,19 @@ const Map: React.FC = () => {
             try {
                 const users = await getUserByName(userName);
                 setUsers(users);
-                const data = users[0].whiteboards as WhiteboardData[]; 
+                const data = users[0].whiteboards as WhiteboardData[];
 
                 // Validate the data
                 const validatedData = data.map(wb => {
                     if (!wb._id) {
                         throw new Error('Whiteboard data does not have an ID');
                     }
-                    return wb;
+                    // Ensure position and dimensions are present
+                    return {
+                        ...wb,
+                        position: wb.position || { x: 0, y: 0 },
+                        dimensions: wb.dimensions || { width: 200, height: 150 },
+                    };
                 });
                 setWhiteboards(validatedData);
                 setLoading(false);
@@ -46,6 +56,7 @@ const Map: React.FC = () => {
                 
         fetchWhiteboardsData();
     }, [userName]); 
+
     const handleCreateWhiteboard = async (e: FormEvent) => {
         e.preventDefault();
     
@@ -68,12 +79,12 @@ const Map: React.FC = () => {
             return;
         }
 
-        const whiteboardData: Omit<WhiteboardData, '_id'> = {
+        const whiteboardData: CreateWhiteboardData = {
             whiteboardTitle: newWhiteboardTitle,
             isPrivate: newWhiteboardPrivate,
             userId: userId,
             position: { x: contextMenu.x, y: contextMenu.y }, // Use the context menu position
-            dimensions: { width: 200, height: 150 }, 
+            dimensions: { width: 200, height: 150 },
             cards: [],
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -87,6 +98,7 @@ const Map: React.FC = () => {
             setNewWhiteboardTitle('');
             setNewWhiteboardPrivate(false);
             setContextMenu(null);
+            setIsAdding(false);
 
             // Update user whiteboards
             const updatedUser: UserUpdateData = {
@@ -94,7 +106,7 @@ const Map: React.FC = () => {
                 userPassword: users[0].userPassword,
                 email: users[0].email,
                 isLoggedin: users[0].isLoggedin,
-                whiteboards: updatedWhiteboards,
+                whiteboards: updatedWhiteboards.map(wb => wb._id), 
             };
             
             try {
@@ -124,7 +136,7 @@ const Map: React.FC = () => {
                     userPassword: users[0].userPassword,
                     email: users[0].email,
                     isLoggedin: users[0].isLoggedin,
-                    whiteboards: updatedWhiteboards,
+                    whiteboards: updatedWhiteboards.map(wb => wb._id), 
                 };
         
                 try {
@@ -145,6 +157,7 @@ const Map: React.FC = () => {
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
         setContextMenu({ x: e.clientX, y: e.clientY });
+        setIsAdding(false); // Reset adding form if context menu is reopened
     };
 
     // Handle click outside the context menu to close it
@@ -152,6 +165,7 @@ const Map: React.FC = () => {
         const handleClick = () => {
             if (contextMenu) {
                 setContextMenu(null);
+                setIsAdding(false);
             }
         };
 
@@ -160,6 +174,35 @@ const Map: React.FC = () => {
             window.removeEventListener('click', handleClick);
         };
     }, [contextMenu]);
+
+    // Handle drag stop to update whiteboard position
+    const handleDragStop = async (id: string, d: { x: number; y: number }) => {
+        try {
+            // Find the whiteboard to update
+            const whiteboardIndex = whiteboards.findIndex(wb => wb._id === id);
+            if (whiteboardIndex === -1) return;
+
+            const updatedWhiteboards = [...whiteboards];
+            updatedWhiteboards[whiteboardIndex] = {
+                ...updatedWhiteboards[whiteboardIndex],
+                position: { x: d.x, y: d.y },
+                updatedAt: new Date(),
+            };
+
+            setWhiteboards(updatedWhiteboards);
+
+            // Update the whiteboard in the backend
+            const updateData: Partial<WhiteboardUpdateData> = {
+                position: { x: d.x, y: d.y },
+                updatedAt: new Date(),
+            };
+
+            await updateWhiteboard(id, updateData);
+        } catch (err: any) {
+            console.error('Failed to update whiteboard position:', err);
+            alert(err.message || 'Failed to update whiteboard position');
+        }
+    };
 
     // Display a loading message while data is being fetched
     if (loading) {
@@ -171,137 +214,148 @@ const Map: React.FC = () => {
     }
 
     return (
-        <div className="relative w-full h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
-          {/* Render the sidebar and the main content */}
-          <div className="flex">
-            <div className="mt-0 ml-0 flex-shrink-0">
-              <Sidebar />
+        <div className="relative w-full h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]" onContextMenu={handleContextMenu}>
+            {/* Render the sidebar and the main content */}
+            <div className="flex">
+                <div className="mt-0 ml-0 flex-shrink-0">
+                    <Sidebar />
+                </div>
+
+                <div className="flex-grow ml-5">
+                    <h2 className="text-4xl font-serif font-extrabold text-center text-[#262220] py-5 tracking-wide">
+                        地圖
+                    </h2>
+                </div>
             </div>
-      
-            <div className="flex-grow ml-5">
-            <h2 className="text-4xl font-serif font-extrabold text-center text-[#262220] py-5 tracking-wide">
-                地圖
-            </h2>
-            </div>
-          </div>
-      
-   
-        {/* Render all the whiteboards */}
-        <div className="absolute top-0 left-0 w-full h-full p-6">
-        {whiteboards.map((whiteboard) => (
-            <div
-            key={whiteboard._id}
-            className="absolute bg-white border border-[#C3A6A0] shadow-xl rounded-2xl p-6 cursor-pointer transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
-            style={{
-                top: whiteboard.position.y,
-                left: whiteboard.position.x,
-                width: whiteboard.dimensions.width * 1.2, 
-                height: whiteboard.dimensions.height * 1.2, 
-            }}
-            onClick={() => navigate(`/whiteboard/${whiteboard._id}`)}
-            >
-            {/* Delete Button */}
-            <button
-                onClick={(e) => {
-                e.stopPropagation();
-                if (whiteboard._id) handleDeleteWhiteboard(whiteboard._id);
-                }}
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg"
-                title="Delete Whiteboard"
-            >
-                &times;
-            </button>
 
-            {/* Whiteboard Title */}
-            <h3 className="text-2xl font-serif font-bold text-[#262220]">
-                {whiteboard.whiteboardTitle}
-            </h3>
+            {/* Render all the whiteboards */}
+            <div className="absolute top-0 left-0 w-full h-full p-6">
+                {whiteboards.map((whiteboard) => (
+                    <Rnd
+                        key={whiteboard._id}
+                        size={{ width: whiteboard.dimensions.width, height: whiteboard.dimensions.height }}
+                        position={{ x: whiteboard.position.x, y: whiteboard.position.y }}
+                        onDragStart={() => { draggedRef.current = false; }}
+                        onDrag={() => { draggedRef.current = true; }}
+                        onDragStop={(e, d) => { 
+                            handleDragStop(whiteboard._id, d); 
+                            draggedRef.current = true; 
+                        }}
+                        bounds="parent"
+                        dragHandleClassName="drag-handle"
+                        enableResizing={false} 
+                    >
+                        <div
+                            className="relative bg-white border border-[#C3A6A0] shadow-xl rounded-2xl p-6 cursor-pointer transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
+                            onClick={() => {
+                                if (!draggedRef.current) {
+                                    navigate(`/whiteboard/${whiteboard._id}`);
+                                }
+                            }}
+                        >
+                            {/* Delete Button */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (whiteboard._id) handleDeleteWhiteboard(whiteboard._id);
+                                }}
+                                className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg"
+                                title="Delete Whiteboard"
+                            >
+                                🗑️
+                            </button>
 
-            {/* Card Count */}
-            <p className="text-lg text-[#A15C38] mt-3">
-                卡片數量: {whiteboard.cards?.length || 0}
-            </p>
+                            {/* Whiteboard Title */}
+                            <h3 className="text-2xl font-serif font-bold text-[#262220] drag-handle">
+                                {whiteboard.whiteboardTitle}
+                            </h3>
 
-                                    {/* Display up to twenty card IDs, if more than twenty, show an ellipsis */}
-                                    <div className="mt-3">
-                            {whiteboard.cards?.slice(0, 20).map((card) => (
-                                <div
-                                    key={card._id}
-                                    className="inline-block bg-blue-500 text-white px-2 py-1 mr-2 mb-2 rounded text-sm"
-                                >
-                                     card {card._id}
-                                </div>
-                            )) || null }
-                            {whiteboard.cards.length > 20 && (
-                                <div className="inline-block bg-gray-500 text-white px-2 py-1 mr-2 mb-2 rounded text-sm">
-                                    ...
-                                </div>
-                            )}
+                            {/* Card Count */}
+                            <p className="text-lg text-[#A15C38] mt-3">
+                                卡片數量: {whiteboard.cards?.length || 0}
+                            </p>
                         </div>
+                    </Rnd>
+                ))}
             </div>
-        ))}
+
+            {/* Context Menu for Adding Whiteboard */}
+            {contextMenu && !isAdding && (
+                <div
+                    className="absolute bg-white border border-[#C3A6A0] shadow-lg rounded-lg p-2 z-50"
+                    style={{
+                        top: contextMenu.y,
+                        left: contextMenu.x,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={() => setIsAdding(true)}
+                        className="w-full text-left px-4 py-2 hover:bg-[#F0E6E0] rounded"
+                    >
+                        新增白板
+                    </button>
+                </div>
+            )}
+
+            {/* Form to Add Whiteboard */}
+            {contextMenu && isAdding && (
+                <div
+                    className="absolute bg-white border border-[#C3A6A0] shadow-lg rounded-lg p-6 z-50"
+                    style={{
+                        top: contextMenu.y,
+                        left: contextMenu.x,
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <form onSubmit={handleCreateWhiteboard} className="space-y-4">
+                        <h3 className="text-xl font-semibold text-[#262220]">新增白板</h3>
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-[#262220]">
+                                標題
+                            </label>
+                            <input
+                                type="text"
+                                value={newWhiteboardTitle}
+                                onChange={(e) => setNewWhiteboardTitle(e.target.value)}
+                                className="w-full px-4 py-2 border border-[#C3A6A0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
+                                placeholder="輸入白板標題"
+                                required
+                            />
+                        </div>
+
+                        <div className="flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={newWhiteboardPrivate}
+                                onChange={(e) => setNewWhiteboardPrivate(e.target.checked)}
+                                id="private"
+                                className="mr-2"
+                            />
+                            <label htmlFor="private" className="text-sm text-[#262220]">私人白板</label>
+                        </div>
+
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                type="button"
+                                onClick={() => { setContextMenu(null); setIsAdding(false); }}
+                                className="px-4 py-2 bg-[#A15C38] text-white rounded-lg shadow-xl hover:shadow-2xl transition-transform duration-300 hover:scale-110"
+                            >
+                                取消
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-[#A15C38] text-white rounded-lg shadow-xl hover:shadow-2xl transition-transform duration-300 hover:scale-110"
+                            >
+                                建立
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
         </div>
-      
-          {/* Context Menu for Adding Whiteboard */}
-          {contextMenu && (
-            <div
-              className="absolute bg-white border border-[#C3A6A0] shadow-lg rounded-lg p-6 z-50"
-              style={{
-                top: contextMenu.y,
-                left: contextMenu.x,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <form onSubmit={handleCreateWhiteboard} className="space-y-4">
-                <h3 className="text-xl font-semibold text-[#262220]">新增白板</h3>
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-[#262220]">
-                    標題
-                  </label>
-                  <input
-                    type="text"
-                    value={newWhiteboardTitle}
-                    onChange={(e) => setNewWhiteboardTitle(e.target.value)}
-                    className="w-full px-4 py-2 border border-[#C3A6A0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
-                    placeholder="輸入白板標題"
-                    required
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={newWhiteboardPrivate}
-                    onChange={(e) => setNewWhiteboardPrivate(e.target.checked)}
-                    className="form-checkbox"
-                    id="private-checkbox"
-                  />
-                  <label
-                    htmlFor="private-checkbox"
-                    className="ml-2 text-sm text-[#262220]"
-                  >
-                    私人
-                  </label>
-                </div>
-                <div className="flex justify-end space-x-4">
-                  <button
-                    type="button"
-                    onClick={() => setContextMenu(null)}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-                  >
-                    取消
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-                  >
-                    建立
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
-      );
+    );
+
 };
 
 export default Map;
