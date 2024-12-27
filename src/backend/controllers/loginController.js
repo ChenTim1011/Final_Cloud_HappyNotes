@@ -1,9 +1,13 @@
 const User = require("../models/User");
 const jwt = require('jsonwebtoken');
 const bcrypt = require("bcryptjs");
+const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const dotenv = require('dotenv');
+
+
 
 // Generate JWT_SECRET & JWT_REFRESH_SECRET
 const checkAndGenerateEnv = () => {
@@ -106,6 +110,75 @@ const REFRESH_TOKEN = async (req, res) => {
     }
 };
 
+// Store verification codes (can be replaced with Redis or other storage for better security)
+const verificationCodes  = {};
+
+// /api/auth/send-verification-code
+// API to send verification code
+const SEND_VERIFICATION_CODE = async (req, res) => {
+    dotenv.config();
+    const { userName, email } = req.body;
+
+    if (!userName) {
+        return res.status(400).json({ message: '請提供 userName' });
+    }
+
+    if (!email) {
+        return res.status(400).json({ message: '請提供 email 地址' });
+    }
+
+    // Generate a six-digit random verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Use nodemailer to send the email
+    const transporter = nodemailer.createTransport({
+        service: 'Gmail', // Change to your email service
+        auth: {
+            user: process.env.EMAIL_USER, // Set email service account
+            pass: process.env.EMAIL_PASS, // Set email service password
+        },
+    });
+
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: '您的驗證碼',
+        text: `您的驗證碼是：${verificationCode}`,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        verificationCodes[userName] = verificationCode; // Save the verification code
+
+        // Send response to client with the verification code
+        res.status(200).json({
+            message: '驗證碼已發送',
+            verificationCode, // Include the verification code in the response (only for testing/demo purposes)
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: '無法發送驗證碼' });
+    }
+};
+
+
+// /api/auth/verify-code
+// API to verify the verification code
+const VERIFY_CODE = async (req, res) => {
+    const { userName, email, code } = req.body;
+
+    if (!userName || !email || !code) {
+        return res.status(400).json({ message: '請提供 userName, email 和驗證碼' });
+    }
+
+    if (verificationCodes[userName] === code) {
+        delete verificationCodes[userName]; // Delete the verification code after successful verification
+        res.status(200).json({ message: '驗證成功' });
+    } else {
+        res.status(400).json({ message: '驗證碼錯誤或已過期' });
+    }
+};
+
 // Middleware for protected routes
 const AuthMiddleware = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the "Authorization" header
@@ -119,4 +192,4 @@ const AuthMiddleware = (req, res, next) => {
     });
 };
 
-module.exports = { GEN_TOKEN, REFRESH_TOKEN, AuthMiddleware };
+module.exports = { GEN_TOKEN, REFRESH_TOKEN, SEND_VERIFICATION_CODE, VERIFY_CODE, AuthMiddleware };

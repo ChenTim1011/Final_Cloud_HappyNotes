@@ -8,4 +8,10 @@ router.post('/login', loginController.GEN_TOKEN);
 // Refresh token route
 router.post('/refresh', loginController.REFRESH_TOKEN);
 
+// Send verification code
+router.post('/send-verification-code', loginController.SEND_VERIFICATION_CODE);
+
+// Verify code
+router.post('/verify-code', loginController.VERIFY_CODE);
+
 module.exports = router;

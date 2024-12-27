@@ -23,6 +23,7 @@
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.2",
+    "nodemailer": "^6.9.16",
     "pm2": "^5.4.2",
     "redis": "^4.7.0"
   }

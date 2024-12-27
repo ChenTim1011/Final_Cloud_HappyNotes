@@ -39,11 +39,7 @@ const Login: React.FC = () => {
           const users = await getUserByName(userName);
 
           const updateduser: UserUpdateData = {
-              userName: users[0].userName,
-              userPassword: users[0].userPassword,
-              email: users[0].email,
               isLoggedin: true,
-              whiteboards: users[0].whiteboards,
           };
 
           try {

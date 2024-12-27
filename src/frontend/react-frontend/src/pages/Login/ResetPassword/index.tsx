@@ -1,8 +1,11 @@
 // src/pages/Login/ResetPassword.tsx - ResetPassword
 
-import React, {useRef} from "react";
-import { updateUser, getUserByName} from '@/services/userService';
+import React, {useRef, useState} from "react";
+import VerificationCodeModal from '@/pages/Login/ResetPassword/VerificationCodeModal';
+import { UserData } from '@/interfaces/User/UserData';
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
+import { updateUser, getUserByName} from '@/services/userService';
+import {sendVerificationCode, verifyCode} from '@/services/loginService';
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 
@@ -16,7 +19,11 @@ const ResetPassword: React.FC = () =>{
     // Use the useNavigate hook to handle page navigation
     const navigate = useNavigate();
 
-    const resetpassword = async () => {
+    const [showVerification, setShowVerification] = useState(false);
+    const [currentUser, setcurrentUser] = useState<UserData | null>(null);
+    const [verificationCode, setVerificationCode] = useState<string | undefined>("");
+
+    const ResetPassword = async () => {
         
         try {
 
@@ -48,13 +55,17 @@ const ResetPassword: React.FC = () =>{
                 throw new Error(`此用戶不存在`);
             }
 
-            const email = emailRef.current?.value || users[0].email;
+            const currentUser = users[0];
+            setcurrentUser(currentUser);
+
+            const currentEmail =  currentUser!.email;
+            const inputEmail = emailRef.current?.value || currentUser!.email;
 
             // Validate each input
             validateInput(userName, "帳號");
             validateInput(userPassword, "密碼");
             validateInput(userPasswordAgain, "密碼");
-            validateInput(email, "email");
+            validateInput(inputEmail, "email");
 
             //Avoid incosistent password
             if(userPassword !== userPasswordAgain){
@@ -62,34 +73,19 @@ const ResetPassword: React.FC = () =>{
                 throw new Error(`請確保兩次輸入的密碼相同。`);
             }
 
-            // If all validation passes, update user information
-            const updateduser: UserUpdateData = {
-                userName: userName,
-                userPassword: userPassword,
-                email: email,
-                isLoggedin: false,
-                whiteboards: users[0].whiteboards,
-            };
+            const response = await sendVerificationCode(userName, currentEmail);
 
-            try {
-                await updateUser(users[0]._id,updateduser);
-                toast.success('更新成功！');
-                navigate('../../auth/login');
-            } catch (error) {
-                if (error instanceof Error) {
-                    toast.error(`更新失敗: ${error.message}`);
-                } else {
-                    toast.error('更新失敗: 未知錯誤');
-                }
-            }
+            setVerificationCode(response.verificationCode);
+            setShowVerification(true);
+
 
         } catch(error) {
             // Catch errors and output the error message
             if (error instanceof Error) {
-                console.error("更新失敗", error.message);
+                console.error("發生錯誤", error.message);
                 toast.error(
                     <div>
-                        更新失敗。
+                        發生錯誤。${error.message}
                     </div>,
                 );
             } else {
@@ -103,6 +99,36 @@ const ResetPassword: React.FC = () =>{
         }
     }
     
+    const handleVerificationSubmit = async (code: string) => {
+        try {
+        
+            if (code !== verificationCode) {
+                toast.error('驗證碼錯誤');
+                return;
+            }
+    
+            const userName = userNameRef.current?.value || '';
+            const userPassword = userPasswordRef.current?.value || '';
+            const inputEmail = emailRef.current?.value || currentUser!.email;
+    
+            console.log(currentUser);
+            const updatedUser: UserUpdateData = {
+                userName,
+                userPassword,
+                email: inputEmail,
+                isLoggedin: false,
+            };
+    
+            await updateUser(currentUser!._id, updatedUser);
+            toast.success('更新成功');
+            navigate('../../auth/login');
+        } catch (error) {
+            toast.error('更新失敗');
+        } finally {
+            setShowVerification(false);
+        }
+    };
+
     return(
     <div className="flex items-center justify-center h-screen bg-gray-100">
         <button
@@ -113,7 +139,7 @@ const ResetPassword: React.FC = () =>{
         </button>
         <div className="w-96 p-6 bg-white shadow-md rounded-md">
             {/* ResetPassword Form */}
-            <form onSubmit={(e) => { e.preventDefault(); resetpassword(); }}>
+            <form onSubmit={(e) => { e.preventDefault(); ResetPassword(); }}>
                 <h2 className="text-xl font-semibold text-center mb-4">重新設定</h2>
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -173,6 +199,12 @@ const ResetPassword: React.FC = () =>{
                 </button>
             </form>        
         </div>
+        {showVerification && (
+        <VerificationCodeModal
+          onClose={() => setShowVerification(false)}
+          onSubmit={handleVerificationSubmit}
+        />
+        )}
     </div>
     );
 }
