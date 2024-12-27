@@ -10,19 +10,31 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    // Set the container to be vertically centered and fill the entire screen
-    <div className="flex flex-col items-center justify-center h-screen bg-white">
-    
+    <div
+      className="relative flex flex-col items-center justify-center h-screen bg-radial-gradient overflow-hidden"
+    >
       {/* Title with large font size and black text */}
-      <h1 className="text-[15vh] text-black m-0">HappyNote</h1>
+      <h1 className="text-[15vh] text-[#262220] font-serif">
+        HappyNote
+      </h1>
+
+      
+      <p className="text-2xl text-[#262220] font-semibold mt-6 shadow-md">
+        讓 <span className="text-[#A15C38]">HappyNote</span> 成為你最好的學習夥伴
+      </p>
 
       {/* Button to login when clicked */}
       <button
-        className="mt-14 px-5 py-2 text-xl cursor-pointer bg-black text-white border-none rounded transition-colors duration-300 hover:bg-blueviolet"
+        className="mt-14 px-8 py-3 text-xl cursor-pointer bg-[#A15C38] text-white border-none rounded-full shadow-xl hover:shadow-2xl transition-transform duration-300 hover:scale-110"
         onClick={() => navigate('/auth/login')}
       >
         登入
       </button>
+
+      {/* Footer with small font size and gray text */}
+      <p className="absolute bottom-5 text-sm text-[#262220] opacity-70">
+        © 2024 HappyNote. All Rights Reserved.
+      </p>
     </div>
   );
 };
