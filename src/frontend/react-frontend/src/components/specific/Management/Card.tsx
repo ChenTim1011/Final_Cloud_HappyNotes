@@ -55,42 +55,43 @@ const Card: React.FC<CardProps> = React.memo(({
 
 
 
-    return (
-        <div
-            className={`card-container ${isSelected ? 'selected' : ''}`}
-            onClick={handleClick}
-            onContextMenu={handleRightClick}
-        >
-            <div className="card-content">
-                {/* Header with buttons */}
-                <div className="flex justify-between items-center mb-2">
-                    {/* Tag Component */}
-              
-                    <Tag currentTag={tag} onUpdateTag={() => {}} /> {/* Update handler can be managed in Management */}
-            
-                    {/* Delete button */}
-                    <button
-                        onClick={handleDelete}
-                        className="text-red-500 hover:text-red-700 focus:outline-none"
-                        title="Delete Card"
-                    >
-                        🗑️
-                    </button>
-                </div>
-            
-                {/* Title */}
-                <h3 className="text-2xl font-semibold mt-2">{cardTitle}</h3>
+return (
+  <div
+    className={`card-container ${isSelected ? 'selected' : ''} bg-[#F7F1F0] border border-[#C3A6A0] shadow-md rounded-lg p-5`}
+    onClick={handleClick}
+    onContextMenu={handleRightClick}
+  >
+    <div className="card-content">
+      {/* Header with buttons */}
+      <div className="flex justify-between items-center mb-4">
+        {/* Tag Component */}
+        <Tag currentTag={tag} onUpdateTag={() => {}} />
 
-                {/* Content Wrapper with Scroll */}
-                <div className="content-wrapper">
-                    <div
-                        className="ql-editor"
-                        dangerouslySetInnerHTML={{ __html: content }}
-                    />
-                </div>
-            </div>
-        </div>
-    );
+        {/* Delete button */}
+        <button
+          onClick={handleDelete}
+          className="text-red-500 hover:text-red-700 focus:outline-none text-lg"
+          title="Delete Card"
+        >
+          🗑️
+        </button>
+      </div>
+
+      {/* Title */}
+      <h3 className="text-xl font-serif font-bold text-[#262220] mt-2">
+        {cardTitle}
+      </h3>
+
+      {/* Content Wrapper with Scroll */}
+      
+        <div
+          className="ql-editor text-[#262220] font-normal"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+  
+    </div>
+  </div>
+);
 });
 
 export default Card;
