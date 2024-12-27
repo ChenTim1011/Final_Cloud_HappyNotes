@@ -67,7 +67,7 @@ const Sidebar: React.FC = () => {
           type="button"
           title="Toggle Sidebar"
           onClick={toggleSidebar}
-          className="p-2 absolute top-0 left-0 z-50 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition-colors duration-200"
+          className="mt-5 p-3 absolute top-4 left-4 z-50 bg-[#A15C38] text-white rounded hover:bg-[#8B4C34] transition-colors duration-200"
         >
           <FaBars size={24} />
         </button>
@@ -75,22 +75,22 @@ const Sidebar: React.FC = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full bg-gray-800 text-white transform transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed left-0 top-0 h-full bg-[#F7F1F0] text-[#262220] transform transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ width: '250px', zIndex: 40 }}
+        style={{ width: "300px", zIndex: 40 }}
       >
-        <div className="p-4">
-          <div className="flex flex-col space-y-4">
+        <div className="p-6">
+          <div className="flex flex-col space-y-6">
             {/* User Information */}
-            <div className="mt-10 p-4 bg-gray-700 rounded-md">
-              <p className="text-sm text-gray-300">使用者</p>
-              <p className="font-medium">{currentUser.userName}</p>
+            <div className="mt-20 p-6 bg-[#3E2C29] text-center rounded shadow-lg">
+              <p className="text-lg text-gray-300">使用者</p>
+              <p className="font-bold text-lg text-white">{currentUser.userName}</p>
             </div>
 
     
             <a
-              className="p-2 bg-gray-700 rounded-md text-center hover:bg-gray-600 cursor-pointer transition-colors duration-200"
+              className="py-3 px-4 bg-[#A15C38] text-center text-white font-medium rounded hover:bg-[#8B4C34] transition-colors duration-200 shadow-md"
               onClick={() => {
                 setIsOpen(false);
                 navigate(`/map/${currentUser.userName}`);
@@ -100,7 +100,7 @@ const Sidebar: React.FC = () => {
             </a>
 
             <a
-              className="p-2 bg-gray-700 rounded-md text-center hover:bg-gray-600 cursor-pointer transition-colors duration-200"
+              className="py-3 px-4 bg-[#A15C38] text-center text-white font-medium rounded hover:bg-[#8B4C34] transition-colors duration-200 shadow-md"
               onClick={() => {
                 setIsOpen(false);
                 navigate(`/management/${currentUser.userName}`);
@@ -108,9 +108,10 @@ const Sidebar: React.FC = () => {
             >
               管理卡片
             </a>
-            {/* Link to Log Out */}
+  
+            {/* Logout Button */}
             <a
-              className="p-2 bg-red-700 rounded-md text-center hover:bg-red-600 cursor-pointer transition-colors duration-200"
+              className="py-3 px-4 bg-[#D64545] text-center text-white font-medium rounded hover:bg-[#B53838] transition-colors duration-200 shadow-md"
               onClick={async () => {
                 setIsOpen(false);
                 await logout();

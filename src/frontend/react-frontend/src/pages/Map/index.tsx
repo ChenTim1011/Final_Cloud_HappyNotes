@@ -171,58 +171,59 @@ const Map: React.FC = () => {
     }
 
     return (
-        <div
-            className="relative w-full h-screen bg-white"
-            onContextMenu={handleContextMenu}
-        >
-
-            {/* Render the sidebar and the main content */}
-            <div className="flex">
-    
-                <div className="mt-0 ml-0 flex-shrink-0">
-                    <Sidebar/>
-                </div>
-
-                <div className="flex-grow ml-5"> 
-                    <h2 className="text-2xl text-center font-semibold p-5">Map Page</h2>
-                   
-                </div>
+        <div className="relative w-full h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
+          {/* Render the sidebar and the main content */}
+          <div className="flex">
+            <div className="mt-0 ml-0 flex-shrink-0">
+              <Sidebar />
             </div>
+      
+            <div className="flex-grow ml-5">
+            <h2 className="text-4xl font-serif font-extrabold text-center text-[#262220] py-5 tracking-wide">
+                地圖
+            </h2>
+            </div>
+          </div>
+      
+   
+        {/* Render all the whiteboards */}
+        <div className="absolute top-0 left-0 w-full h-full p-6">
+        {whiteboards.map((whiteboard) => (
+            <div
+            key={whiteboard._id}
+            className="absolute bg-white border border-[#C3A6A0] shadow-xl rounded-2xl p-6 cursor-pointer transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
+            style={{
+                top: whiteboard.position.y,
+                left: whiteboard.position.x,
+                width: whiteboard.dimensions.width * 1.2, 
+                height: whiteboard.dimensions.height * 1.2, 
+            }}
+            onClick={() => navigate(`/whiteboard/${whiteboard._id}`)}
+            >
+            {/* Delete Button */}
+            <button
+                onClick={(e) => {
+                e.stopPropagation();
+                if (whiteboard._id) handleDeleteWhiteboard(whiteboard._id);
+                }}
+                className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg"
+                title="Delete Whiteboard"
+            >
+                &times;
+            </button>
 
-            {/* Render all the whiteboards */}
-            <div className="absolute top-0 left-0 w-full h-full">
-                {whiteboards.map((whiteboard) => (
-                    <div
-                        key={whiteboard._id}
-                        className="absolute bg-gray-100 border border-gray-300 p-4 rounded-lg cursor-pointer transform transition-transform duration-200 hover:scale-105"
-                        style={{
-                            top: whiteboard.position.y,
-                            left: whiteboard.position.x,
-                            width: whiteboard.dimensions.width,
-                            height: whiteboard.dimensions.height
-                        }}
-                        onClick={() => navigate(`/whiteboard/${whiteboard._id}`)}
-                    >
-                        {/* Delete Button */}
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation(); // prevent onClick from navigating to whiteboard
-                                if (whiteboard._id) handleDeleteWhiteboard(whiteboard._id);
-                            }}
-                            className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                            title="Delete Whiteboard"
-                        >
-                            &times;
-                        </button>
+            {/* Whiteboard Title */}
+            <h3 className="text-2xl font-serif font-bold text-[#262220]">
+                {whiteboard.whiteboardTitle}
+            </h3>
 
-                        {/* Display the whiteboard title */}
-                        <h3 className="text-lg font-medium">{whiteboard.whiteboardTitle}</h3>
+            {/* Card Count */}
+            <p className="text-lg text-[#A15C38] mt-3">
+                卡片數量: {whiteboard.cards?.length || 0}
+            </p>
 
-                        {/* Display the number of cards on this whiteboard */}
-                        <p className="mt-2">Number of Cards: {whiteboard.cards?.length || 0}</p>
-
-                        {/* Display up to twenty card IDs, if more than twenty, show an ellipsis */}
-                        <div className="mt-3">
+                                    {/* Display up to twenty card IDs, if more than twenty, show an ellipsis */}
+                                    <div className="mt-3">
                             {whiteboard.cards?.slice(0, 20).map((card) => (
                                 <div
                                     key={card._id}
@@ -237,66 +238,70 @@ const Map: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                    </div>
-                ))}
             </div>
-
-
-
-            {/* Context Menu for Adding Whiteboard */}
-            {contextMenu && (
-                    <div
-                        className="absolute bg-white border border-gray-300 shadow-lg rounded p-4 z-50"
-                        style={{
-                            top: contextMenu.y,
-                            left: contextMenu.x,
-                        }}
-                        onClick={(e) => e.stopPropagation()} // Prevent event bubbling to close the form
-                    >
-                        <form onSubmit={handleCreateWhiteboard} className="space-y-4">
-                            <h3 className="text-xl font-semibold">新增白板</h3>
-                            <div>
-                                <label className="block mb-1">標題</label>
-                                <input
-                                    type="text"
-                                    value={newWhiteboardTitle}
-                                    onChange={(e) => setNewWhiteboardTitle(e.target.value)}
-                                    className="w-full px-3 py-2 border rounded"
-                                    placeholder="輸入白板標題"
-                                    required
-                                />
-                            </div>
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    checked={newWhiteboardPrivate}
-                                    onChange={(e) => setNewWhiteboardPrivate(e.target.checked)}
-                                    className="form-checkbox"
-                                    id="private-checkbox"
-                                />
-                                <label htmlFor="private-checkbox" className="ml-2">私人</label>
-                            </div>
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setContextMenu(null)}
-                                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                                >
-                                    建立
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-            )}
+        ))}
         </div>
-    );
-
+      
+          {/* Context Menu for Adding Whiteboard */}
+          {contextMenu && (
+            <div
+              className="absolute bg-white border border-[#C3A6A0] shadow-lg rounded-lg p-6 z-50"
+              style={{
+                top: contextMenu.y,
+                left: contextMenu.x,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <form onSubmit={handleCreateWhiteboard} className="space-y-4">
+                <h3 className="text-xl font-semibold text-[#262220]">新增白板</h3>
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-[#262220]">
+                    標題
+                  </label>
+                  <input
+                    type="text"
+                    value={newWhiteboardTitle}
+                    onChange={(e) => setNewWhiteboardTitle(e.target.value)}
+                    className="w-full px-4 py-2 border border-[#C3A6A0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
+                    placeholder="輸入白板標題"
+                    required
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={newWhiteboardPrivate}
+                    onChange={(e) => setNewWhiteboardPrivate(e.target.checked)}
+                    className="form-checkbox"
+                    id="private-checkbox"
+                  />
+                  <label
+                    htmlFor="private-checkbox"
+                    className="ml-2 text-sm text-[#262220]"
+                  >
+                    私人
+                  </label>
+                </div>
+                <div className="flex justify-end space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => setContextMenu(null)}
+                    className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                  >
+                    取消
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                  >
+                    建立
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+      );
 };
 
 export default Map;
