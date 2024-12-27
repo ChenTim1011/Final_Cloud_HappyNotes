@@ -95,67 +95,74 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <button
-        onClick={()=>{navigate('../..');}}
-        className="fixed top-4 right-4 bg-black text-white px-4 py-2 rounded shadow-lg hover:bg-gray-800 transition"
-      >
-        回首頁
-      </button>
-      <div className="w-96 p-6 bg-white shadow-md rounded-md">
-        <div className="flex justify-start space-x-4 mb-6">
-          {/* Forget Password Button */}
-          <button 
-            className="text-white bg-red-500 hover:bg-red-600 font-medium py-2 px-4 rounded"
-            onClick={() => {navigate('../../auth/reset-password')}}
-          >
-            忘記密碼?
-          </button>
-
-          {/* Register Button */}
-          <button 
-            className="text-white bg-green-500 hover:bg-green-600 font-medium py-2 px-4 rounded"
-            onClick={() => {navigate('../../auth/register')}}
-          >
-            註冊
-          </button>
-        </div>
-
+    <div className="flex items-center justify-center h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
+      <div className="w-[28rem] bg-white rounded-lg shadow-lg p-10">
+        {/* Title */}
+        <h2 className="text-3xl font-semibold text-center text-[#262220] mb-8">
+          登入
+        </h2>
+  
         {/* Login Form */}
-        <form onSubmit={(e) => { e.preventDefault(); login(); }}>
-          <h2 className="text-xl font-semibold text-center mb-4">登入</h2>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            login();
+          }}
+        >
+          <div className="mb-6">
+            <label
+              className="block text-base font-medium text-[#262220] mb-2"
+              htmlFor="userName"
+            >
               帳號
             </label>
             <input
               ref={userNameRef}
               id="userName"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-5 py-3 border border-[#C3A6A0] rounded-md text-base focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
               placeholder="輸入您的帳號"
               required
             />
           </div>
-          <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-8">
+            <label
+              className="block text-base font-medium text-[#262220] mb-2"
+              htmlFor="password"
+            >
               密碼
             </label>
             <input
               type="password"
               ref={userPasswordRef}
               id="password"
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full px-5 py-3 border border-[#C3A6A0] rounded-md text-base focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
               placeholder="輸入您的密碼"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
+            className="w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-3 text-lg rounded-lg transition-colors"
           >
             登入
           </button>
         </form>
+  
+        
+        <div className="flex justify-between mt-6">
+          <button
+            onClick={() => navigate("../../auth/reset-password")}
+            className="text-base text-[#A15C38] hover:text-[#262220] font-medium transition-colors"
+          >
+            忘記密碼？
+          </button>
+          <button
+            onClick={() => navigate("../../auth/register")}
+            className="text-base text-[#A15C38] hover:text-[#262220] font-medium transition-colors"
+          >
+            註冊
+          </button>
+        </div>
       </div>
     </div>
   );

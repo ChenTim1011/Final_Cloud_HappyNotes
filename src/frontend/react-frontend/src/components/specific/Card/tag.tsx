@@ -51,7 +51,7 @@ const Tag: React.FC<TagProps> = ({ currentTag = '', onUpdateTag }) => {
           onDoubleClick={handleDoubleClick}
           className="text-gray-700 cursor-pointer hover:text-blue-500"
         >
-          Tag: {currentTag || 'New Tag'}
+          標籤: {currentTag || '新的標籤'}
         </span>
       )}
     </div>

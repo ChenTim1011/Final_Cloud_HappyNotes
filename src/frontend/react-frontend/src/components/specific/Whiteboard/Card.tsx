@@ -279,196 +279,199 @@ const Card: React.FC<CardProps> = React.memo(({
 
     return (
         <Rnd
-            size={isFullscreen ? { width: '100vw', height: '100vh' } : localDimensions}
-            position={isFullscreen ? { x: 0, y: 0 } : localPosition}
-            onDragStop={(e, d) => {
-                if (!isFullscreen) { // Only handle drag stop if not fullscreen
-                    handleResize({ width: localDimensions.width, height: localDimensions.height }, { x: d.x, y: d.y });
+          size={isFullscreen ? { width: '100vw', height: '100vh' } : localDimensions}
+          position={isFullscreen ? { x: 0, y: 0 } : localPosition}
+          onDragStop={(e, d) => {
+            if (!isFullscreen) {// Only handle drag stop if not fullscreen
+              handleResize({ width: localDimensions.width, height: localDimensions.height }, { x: d.x, y: d.y });
+            }
+          }}
+          onResize={(e, direction, ref, delta, position) => {
+            if (isFullscreen) return;
+            const newWidth = Math.max(parseInt(ref.style.width, 10), MIN_WIDTH);
+            const newHeight = Math.max(parseInt(ref.style.height, 10), MIN_HEIGHT);
+            setLocalDimensions({
+              width: newWidth,
+              height: newHeight,
+            });
+            setLocalPosition(position);
+          }}
+          onResizeStop={(e, direction, ref, delta, position) => {
+            if (isFullscreen) return;
+            handleResize(
+              {
+                width: Math.max(parseInt(ref.style.width, 10), MIN_WIDTH),
+                height: Math.max(parseInt(ref.style.height, 10), MIN_HEIGHT),
+              },
+              position
+            );
+          }}
+          bounds={'window'}
+          enableResizing={
+            isFullscreen
+              ? false
+              : {
+                  top: !isEditing,
+                  right: true,
+                  bottom: !isEditing,
+                  left: true,
+                  topRight: !isEditing,
+                  bottomRight: !isEditing,
+                  bottomLeft: !isEditing,
+                  topLeft: !isEditing,
                 }
-            }}
-            onResize={(e, direction, ref, delta, position) => {
-                if (isFullscreen) return; 
-                const newWidth = Math.max(parseInt(ref.style.width, 10), MIN_WIDTH);
-                const newHeight = Math.max(parseInt(ref.style.height, 10), MIN_HEIGHT);
-                setLocalDimensions({
-                    width: newWidth,
-                    height: newHeight
-                });
-                setLocalPosition(position);
-            }}
-            onResizeStop={(e, direction, ref, delta, position) => {
-                if (isFullscreen) return; 
-                handleResize(
-                    {
-                        width: Math.max(parseInt(ref.style.width, 10), MIN_WIDTH),
-                        height: Math.max(parseInt(ref.style.height, 10), MIN_HEIGHT)
-                    },
-                    position
-                );
-            }}
-            bounds={'window'}  
-            enableResizing={isFullscreen ? false : {  
-                top: !isEditing,  
-                right: true,  
-                bottom: !isEditing,  
-                left: true,  
-                topRight: !isEditing,  
-                bottomRight: !isEditing,  
-                bottomLeft: !isEditing,  
-                topLeft: !isEditing  
-            }}  
-            disableDragging={isEditing} // Disable dragging when editing
-            onContextMenu={(e:any) => {
-                e.stopPropagation(); 
-                onRightClick?.(e, _id); 
-            }}
-            minHeight={MIN_HEIGHT}
-            minWidth={MIN_WIDTH}
-            maxHeight={isFullscreen ? '100vh' : MAX_HEIGHT} 
-            maxWidth={isFullscreen ? '100vw' : MAX_WIDTH} 
-            className={`${isSelected ? 'ring-4 ring-blue-500' : ''} ${isFullscreen ? 'fullscreen-card' : ''}`}   
-            style={isFullscreen ? { position: 'fixed', top: 0, left: 0, zIndex: 9999 } : {}}
-        >  
-            <div  
-                className={`bg-blue-100 border border-blue-300 p-4 rounded shadow relative h-full w-full flex flex-col ${
-                    isEditing ? '' : 'select-none'
-                } ${isFullscreen ? 'fullscreen-content' : ''}`}
-                onDoubleClick={() => setIsEditing(true)}  
-                onClick={() => onSelect(_id)}   
-                ref={cardRef}  
-                style={{ boxSizing: 'border-box', transition: 'none', overflow: 'hidden' }} // Remove transitions and prevent overflow
-            >
-                {/* Header with fixed buttons and title */}
-                <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center space-x-2">
-                    
-                        {!isFullscreen && (
-                            <>
-                                {/* Fold button */}
-                                <button
-                                    onClick={handleToggleFold}
-                                    className="text-gray-500 hover:text-gray-700 focus:outline-none"  
-                                    style={{ fontSize: '1.25rem' }} 
-                                    title={isFolded ? '展開卡片' : '摺疊卡片'}
-                                >
-                                    {isFolded ? '+' : '-'}
-                                </button>
-
-                                {/* Copy button */}
-                                <button
-                                    onClick={(e) => { 
-                                        e.stopPropagation(); 
-                                        onCopyCard({ 
-                                            _id,
-                                            cardTitle,
-                                            content,
-                                            dueDate,
-                                            tag,
-                                            foldOrNot,
-                                            position,
-                                            dimensions,
-                                            connection,
-                                            connectionBy,
-                                            comments,
-                                            createdAt: new Date(),
-                                            updatedAt: new Date(),
-                                        }); 
-                                    }}
-                                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                                    style={{ fontSize: '1.25rem' }}
-                                    title="複製卡片"
-                                >
-                                    📄
-                                </button>
-                            </>
-                        )}
-
-                        {/* Fullscreen button */}
-                        <button
-                            onClick={toggleFullscreen}
-                            className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                            style={{ zIndex: 10 }}
-                            title="全螢幕"
-                        >
-                            {isFullscreen ? '離開全螢幕' : '🖥️'}
-                        </button>
-                    </div>
-
-                    {/* Delete button */}
+          }
+          disableDragging={isEditing}// Disable dragging when editing
+          onContextMenu={(e: any) => {
+            e.stopPropagation();
+            onRightClick?.(e, _id);
+          }}
+          minHeight={MIN_HEIGHT}
+          minWidth={MIN_WIDTH}
+          maxHeight={isFullscreen ? '100vh' : MAX_HEIGHT}
+          maxWidth={isFullscreen ? '100vw' : MAX_WIDTH}
+          className={`${
+            isSelected ? 'ring-4 ring-[#A15C38]' : ''
+          } ${isFullscreen ? 'fullscreen-card' : ''}`}
+          style={isFullscreen ? { position: 'fixed', top: 0, left: 0, zIndex: 9999 } : {}}
+        >
+          <div
+            className={`bg-[#F7F1F0] border border-[#C3A6A0] p-6 rounded-xl shadow-lg relative h-full w-full flex flex-col ${
+              isEditing ? '' : 'select-none'
+            } ${isFullscreen ? 'fullscreen-content' : ''}`}
+            onDoubleClick={() => setIsEditing(true)}
+            onClick={() => onSelect(_id)}
+            ref={cardRef}
+            style={{ boxSizing: 'border-box', overflow: 'hidden' }}
+          >
+            {/* Header with fixed buttons and title */}
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center space-x-3">
+                {!isFullscreen && (
+                  <>
+                    {/* Fold button */}
                     <button
-                        onClick={handleDelete}
-                        className="text-red-500 hover:text-red-700 focus:outline-none" 
-                        title="Delete Card"
+                      onClick={handleToggleFold}
+                      className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
+                      title={isFolded ? '展開卡片' : '摺疊卡片'}
                     >
-                        &times;
+                      {isFolded ? '+' : '-'}
                     </button>
-                </div>
-
-                {/* Tag Component */}
-                <div className="mb-2">
-                    <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
-                </div>
-
-                {/* Header with title and save button */}
-                {isEditing && (
-                    <div className="flex justify-between items-center mb-2">
-                        {/* Title Input */}
-                        <input  
-                            type="text"  
-                            value={editedTitle}  
-                            onChange={(e) => setEditedTitle(e.target.value)}  
-                            className="w-full px-2 py-1 border rounded mr-2 select-text"  
-                            placeholder="Enter card title"  
-                            style={{ boxSizing: 'border-box', transition: 'none' , userSelect: 'text'}}  
-                        />
-
-                        {/* Save Button */}
-                        <button
-                            onClick={handleSave}
-                            className="px-3 py-1 bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none transition duration-200 ease-in-out shadow-md transform hover:scale-105 flex items-center justify-center"
-                            >
-                            Save
-                        </button>
-                    </div>
+      
+                    {/* Copy button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCopyCard({
+                          _id,
+                          cardTitle,
+                          content,
+                          dueDate,
+                          tag,
+                          foldOrNot,
+                          position,
+                          dimensions,
+                          connection,
+                          connectionBy,
+                          comments,
+                          createdAt: new Date(),
+                          updatedAt: new Date(),
+                        });
+                      }}
+                      className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
+                      title="複製卡片"
+                    >
+                      📄
+                    </button>
+                  </>
                 )}
-
-                {/* Content Area */}
-                <div className={`flex-grow ${isEditing ? 'select-text' : 'select-none'}`}>
-                    {isEditing ? (
-                        <div className="flex flex-col select-text">
-                            {!isFolded && ( 
-                                <> 
-                                    {/* QuillEditor for editing the card content */} 
-                                    <QuillEditor
-                                        content={editedContent}
-                                        handleContentChange2={handleContentChange}
-                                        readOnly={false}
-                                        theme="snow"
-                                        onHeightChange={handleQuillHeightChange}
-                                    />
-                                </>  
-                            )}
-                        </div> 
-                    ) : (  
-                        <div className="flex flex-col">
-                            <h3 ref={titleRef} className="text-lg font-semibold mt-2">{cardTitle}</h3>  
-                            {!isFolded && (
-                                <div className="mt-2">
-                                    <QuillEditor
-                                        content={content}
-                                        handleContentChange2={() => {}} // No-op in read-only mode
-                                        readOnly={true}
-                                        theme="bubble"
-                                        onHeightChange={handleQuillHeightChange}
-                                    />
-                                </div>
-                            )}  
-                        </div> 
-                    )}
-                </div>
+      
+                {/* Fullscreen button */}
+                <button
+                  onClick={toggleFullscreen}
+                  className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
+                  title="全螢幕"
+                >
+                  {isFullscreen ? '離開全螢幕' : '🖥️'}
+                </button>
+              </div>
+      
+              {/* Delete button */}
+              <button
+                onClick={handleDelete}
+                className="text-red-500 hover:text-red-700 focus:outline-none text-xl"
+                title="Delete Card"
+              >
+                &times;
+              </button>
             </div>
-        </Rnd>  
-    )
+      
+            {/* Tag Component */}
+            <div className="mb-4">
+              <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
+            </div>
+      
+            {/* Header with title and save button */}
+            {isEditing && (
+              <div className="flex justify-between items-center mb-4">
+                <input
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#C3A6A0] rounded text-[#262220] focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
+                  placeholder="輸入卡片標題"
+                />
+      
+                <button
+                  onClick={handleSave}
+                  className="px-4 py-2 bg-[#A15C38] text-white rounded-lg hover:bg-[#8B4C34] focus:outline-none transition duration-200 shadow-md"
+                >
+                  保存
+                </button>
+              </div>
+            )}
+      
+            {/* Content Area */}
+            <div className={`flex-grow ${isEditing ? 'select-text' : 'select-none'}`}>
+              {isEditing ? (
+                <div className="flex flex-col select-text">
+                  {!isFolded && (
+                    <>
+                      <QuillEditor
+                        content={editedContent}
+                        handleContentChange2={handleContentChange}
+                        readOnly={false}
+                        theme="snow"
+                        onHeightChange={handleQuillHeightChange}
+                      />
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <h3
+                    ref={titleRef}
+                    className="text-xl font-serif font-bold text-[#262220] mt-2"
+                  >
+                    {cardTitle}
+                  </h3>
+                  {!isFolded && (
+                    <div className="mt-4">
+                      <QuillEditor
+                        content={content}
+                        handleContentChange2={() => {}}
+                        readOnly={true}
+                        theme="bubble"
+                        onHeightChange={handleQuillHeightChange}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </Rnd>
+      );
     });
 
     export default Card;
