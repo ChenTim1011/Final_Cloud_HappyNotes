@@ -26,6 +26,9 @@ const Map: React.FC = () => {
             try {
                 const users = await getUserByName(userName);
                 setUsers(users);
+                if(!users[0].isLoggedin){
+                    navigate(`../../auth/login`);
+                }
                 const data = users[0].whiteboards;
 
                 // Validate the data
@@ -85,14 +88,9 @@ const Map: React.FC = () => {
             setContextMenu(null);
 
             const updateduser: UserUpdateData = {
-                userName: users[0].userName,
-                userPassword: users[0].userPassword,
-                email: users[0].email,
-                isLoggedin: users[0].isLoggedin,
                 whiteboards: updatedWhiteboards,
             };
             
-            // console.log(updateduser.whiteboards);
             try {
                 await updateUser(users[0]._id,updateduser);
             } catch (err: any) {
@@ -116,10 +114,6 @@ const Map: React.FC = () => {
                 setWhiteboards(updatedWhiteboards);
                 
                 const updateduser: UserUpdateData = {
-                    userName: users[0].userName,
-                    userPassword: users[0].userPassword,
-                    email: users[0].email,
-                    isLoggedin: users[0].isLoggedin,
                     whiteboards: updatedWhiteboards,
                 };
         

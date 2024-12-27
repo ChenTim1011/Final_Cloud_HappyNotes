@@ -25,11 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({users}) => {
   const logout = async() =>{
     setCurrentUser(users[0]);
     const updateduser: UserUpdateData = {
-        userName: currentUser.userName,
-        userPassword: currentUser.userPassword,
-        email: currentUser.email,
         isLoggedin: false,
-        whiteboards: currentUser.whiteboards,
     };
     
 
