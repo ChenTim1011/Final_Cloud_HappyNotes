@@ -420,7 +420,7 @@ const Management: React.FC = () => {
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
             {/* Sidebar with fixed position */}
-            <div className="fixed top-0 left-0 z-50">
+            <div className="fixed top-[-20px] left-[-5px] h-screen w-64 z-50">
                 <Sidebar />
             </div>
 

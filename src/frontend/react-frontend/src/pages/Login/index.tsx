@@ -96,12 +96,20 @@ const Login: React.FC = () => {
 
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
-      <div className="w-[28rem] bg-white rounded-lg shadow-lg p-10">
+      <div className="w-[28rem] bg-white rounded-lg shadow-lg p-10 relative">
+        {/* Back to Home Button */}
+        <button
+          onClick={() => navigate("/")}
+          className="text-base text-[#A15C38] hover:text-[#262220] font-medium transition-colors"
+        >
+          回到首頁
+        </button>
+
         {/* Title */}
         <h2 className="text-3xl font-semibold text-center text-[#262220] mb-8">
           登入
         </h2>
-  
+
         {/* Login Form */}
         <form
           onSubmit={(e) => {
@@ -147,8 +155,7 @@ const Login: React.FC = () => {
             登入
           </button>
         </form>
-  
-        
+
         <div className="flex justify-between mt-6">
           <button
             onClick={() => navigate("../../auth/reset-password")}

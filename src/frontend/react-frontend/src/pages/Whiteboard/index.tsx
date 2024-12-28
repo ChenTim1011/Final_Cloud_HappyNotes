@@ -235,24 +235,30 @@ const Whiteboard: React.FC = () => {
     }
 
     return (
-        <div className="flex">
- 
-            <div className="flex-shrink-0">
-                <Sidebar />
-            </div>
-
-
-            <div className="flex-grow overflow-auto bg-[#C3A6A0]" style={{ width: '10000px', height: '10000px' }} ref={whiteboardRef}
-                onClick={() => setContextMenu(null)}
-                onContextMenu={(e) => handleRightClick(e)}
-                onKeyDown={handleKeyDown}
-                tabIndex={0}
-            >
-          
-                <div className="text-3xl font-serif font-bold text-center text-[#262220] py-5 tracking-wide">
-                    {whiteboard ? whiteboard.whiteboardTitle : '載入中...'}
+        <div className="relative w-full h-screen bg-[#F7F1F0]">
+            {/* Render the sidebar and the main content */}
+            <div className="flex">
+                {/* Sidebar */}
+                <div className="fixed top-[-20px] left-0 h-screen w-64 z-50">
+                    <Sidebar />
                 </div>
-
+        
+                {/* Whiteboard Title Row */}
+                <div className="flex-grow ml-5">
+                    <div className="bg-[#F7F1F0] py-4 shadow-md rounded-b-lg">
+                        <h2 className="text-4xl font-serif font-extrabold text-center text-black tracking-wide">
+                            {whiteboard ? whiteboard.whiteboardTitle : '載入中...'}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        
+            {/* Main Content */}
+            <div
+                className="flex-grow overflow-auto bg-[#C3A6A0]"
+                style={{ width: '10000px', height: '10000px' }}
+                ref={whiteboardRef}
+            >
                 {/* Card Rendering Section */}
                 {cards.map((card) => (
                     <Card
@@ -267,8 +273,8 @@ const Whiteboard: React.FC = () => {
                         onRightClick={(e) => handleRightClick(e, card._id)}
                     />
                 ))}
-
-                
+        
+                {/* Context Menu */}
                 {contextMenu && (
                     <div
                         className="absolute bg-white border border-[#C3A6A0] text-[#262220] p-3 rounded-lg z-50 shadow-lg cursor-pointer"

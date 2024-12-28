@@ -338,7 +338,7 @@ const Card: React.FC<CardProps> = React.memo(({
                         className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
                         title={isFolded ? '展開卡片' : '摺疊卡片'}
                       >
-                        {isFolded ? '+' : '-'}
+                        {/* {isFolded ? '+' : '-'} */}
                       </button>
         
                       {/* Copy button */}
@@ -385,7 +385,7 @@ const Card: React.FC<CardProps> = React.memo(({
                   className="text-red-500 hover:text-red-700 focus:outline-none text-xl"
                   title="刪除卡片"
                 >
-                  &times;
+                  🗑️
                 </button>
               </div>
         

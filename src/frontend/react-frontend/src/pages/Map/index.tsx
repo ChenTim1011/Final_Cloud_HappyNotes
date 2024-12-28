@@ -1,6 +1,6 @@
 // src/pages/Map.tsx - Updated to include a context menu with "新增白板" option
 
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent,useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
 import { WhiteboardUpdateData } from '@/interfaces/Whiteboard/WhiteboardUpdateData';
@@ -24,7 +24,7 @@ const Map: React.FC = () => {
     const [newWhiteboardTitle, setNewWhiteboardTitle] = useState<string>('');
     const [newWhiteboardPrivate, setNewWhiteboardPrivate] = useState<boolean>(false);
     const [draggingWhiteboardId, setDraggingWhiteboardId] = useState<string | null>(null); // Track which whiteboard is being dragged
-
+    const whiteboardRef = useRef<HTMLDivElement>(null);
     // Fetch whiteboards data from the backend when the component mounts
     useEffect(() => {
         const fetchWhiteboardsData = async () => {
@@ -217,10 +217,10 @@ const Map: React.FC = () => {
     }
 
     return (
-        <div className="relative w-full h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]" onContextMenu={handleContextMenu}>
+        <div className="relative w-full h-screen bg-[#F7F1F0]" onContextMenu={handleContextMenu}>
             {/* Render the sidebar and the main content */}
             <div className="flex">
-                <div className="mt-0 ml-0 flex-shrink-0">
+                <div className="fixed top-[-20px] left-0 h-screen w-64 z-50">
                     <Sidebar />
                 </div>
 
@@ -232,7 +232,11 @@ const Map: React.FC = () => {
             </div>
 
             {/* Render all the whiteboards */}
-            <div className="absolute top-0 left-0 w-full h-full p-6">
+            <div
+                className="flex-grow overflow-auto bg-[#C3A6A0]"
+                style={{ width: '2000px', height: '2000px' }}
+                ref={whiteboardRef}
+            >
                 {whiteboards.map((whiteboard) => (
                     <Rnd
                         key={whiteboard._id}
