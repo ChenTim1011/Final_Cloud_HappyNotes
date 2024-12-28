@@ -13,7 +13,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
-import { Search, Clock, Calendar } from 'lucide-react';
+import { Search, Clock, Calendar, Plus } from 'lucide-react'; 
 import { getAllWhiteboards } from '@/services/whiteboardService';
 import { getAllCards, deleteCard, createCard, updateCard } from '@/services/cardService';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
@@ -31,7 +31,7 @@ import { getUserByName } from '@/services/userService';
 import { UserData } from '@/interfaces/User/UserData'; 
 import FullscreenEdit from '@/components/specific/Management/FullscreenEdit';
 
-const ITEMS_PER_PAGE = 20; // Number of cards displayed per page
+const ITEMS_PER_PAGE = 16; // Number of cards displayed per page
 const MAX_VISIBLE_PAGES = 5; // Maximum number of pages to display in pagination
 const ALL_VALUE = "all"; // Value for the "All" option
 const DEBOUNCE_DELAY = 500; // Debounce delay time in milliseconds
@@ -254,10 +254,10 @@ const Management: React.FC = () => {
                 ...wb,
                 cards: wb.cards.map(card => card._id === updatedCard._id ? updatedCard : card)
             })));
-            toast.success('Card successfully updated');
+            toast.success('卡片更新成功');
         } catch (error) {
             console.error('Failed to update card:', error);
-            toast.error('Failed to update card');
+            toast.error('卡片更新失敗');
         }
     }, []);
 
@@ -274,10 +274,10 @@ const Management: React.FC = () => {
                     cards: wb.cards.filter(card => card._id !== cardId)
                 }))
             );
-            toast.success('Card deleted');
+            toast.success('卡片已刪除');
         } catch (error) {
             console.error('Failed to delete card:', error);
-            toast.error('Failed to delete card');
+            toast.error('卡片刪除失敗');
         }
     }, []);
 
@@ -299,7 +299,7 @@ const Management: React.FC = () => {
                 updatedAt: new Date(),
             };
             const createdCard = await createCard(newCardData);
-            console.log("Created Card:", createdCard);
+            
 
             setCards(prevCards => [...prevCards, createdCard]);
 
@@ -314,10 +314,10 @@ const Management: React.FC = () => {
                 return wb;
             }));
 
-            toast.success('Card copied');
+            toast.success('卡片已複製');
         } catch (error) {
-            console.error('Failed to copy card:', error);
-            toast.error('Failed to copy card');
+            console.error('複製卡片失敗：', error);
+            toast.error('複製卡片失敗');
         }
     }, []);
 
@@ -338,185 +338,266 @@ const Management: React.FC = () => {
         }
     };
 
-    // 13. Display user-related error messages
+    // 13. Add a new card
+    const handleAddCard = async () => {
+        try {
+            const newCardData: Omit<CardData, '_id'> = {
+                cardTitle: '新卡片',
+                content: '',
+                dueDate: undefined, 
+                tag: '',
+                foldOrNot: false,
+                position: { x: 0, y: 0 },
+                dimensions: { width: 300, height: 200 },
+                connection: undefined,
+                connectionBy: undefined,
+                comments: [],
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            };
+            const createdCard = await createCard(newCardData);
+            console.log("新建的卡片：", createdCard);
+
+            setCards(prevCards => [...prevCards, createdCard]);
+
+            // Add the new card to the selected whiteboard if any
+            if (selectedWhiteboard !== ALL_VALUE) {
+                const targetWhiteboard = whiteboards.find(wb => wb._id === selectedWhiteboard);
+                if (targetWhiteboard) {
+                    setWhiteboards(prevWhiteboards => prevWhiteboards.map(wb => {
+                        if (wb._id === targetWhiteboard._id) {
+                            return {
+                                ...wb,
+                                cards: [...wb.cards, createdCard]
+                            };
+                        }
+                        return wb;
+                    }));
+                } else {
+                    // If the selected whiteboard is not found, insert into the first whiteboard
+                    if (whiteboards.length > 0) {
+                        const firstWhiteboard = whiteboards[0];
+                        setWhiteboards(prevWhiteboards => prevWhiteboards.map(wb => {
+                            if (wb._id === firstWhiteboard._id) {
+                                return {
+                                    ...wb,
+                                    cards: [...wb.cards, createdCard]
+                                };
+                            }
+                            return wb;
+                        }));
+                    }
+                }
+            } else {
+                // Insert into the first whiteboard
+                if (whiteboards.length > 0) {
+                    const firstWhiteboard = whiteboards[0];
+                    setWhiteboards(prevWhiteboards => prevWhiteboards.map(wb => {
+                        if (wb._id === firstWhiteboard._id) {
+                            return {
+                                ...wb,
+                                cards: [...wb.cards, createdCard]
+                            };
+                        }
+                        return wb;
+                    }));
+                }
+            }
+
+
+            toast.success('卡片已新增');
+        } catch (error) {
+            console.error('新增卡片失敗：', error);
+            toast.error('新增卡片失敗');
+        }
+    };
+
+    // 14. Display loading or error messages
     if (userError) {
         return <div className="p-5 text-center text-red-500">{userError}</div>;
     }
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
-          {/* Sidebar with fixed position */}
-          <div className="fixed top-0 left-0 z-50">
-            <Sidebar />
-          </div>
-      
-          {/* Header Bar */}
-          <div className="fixed top-0 left-16 right-0 h-16 bg-white border-b border-[#C3A6A0] flex justify-center items-center px-4 z-10 shadow-md">
-            <div className="flex items-center gap-6 max-w-7xl w-full">
-              {/* Search Input */}
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <Input
-                  type="text"
-                  placeholder="搜尋卡片..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-full border border-[#C3A6A0] rounded-lg focus:ring-2 focus:ring-[#A15C38]"
-                />
-              </div>
-      
-              {/* Tag Filter */}
-              <Select value={selectedTag} onValueChange={setSelectedTag}>
-                <SelectTrigger className="w-40 border border-[#C3A6A0] rounded-lg focus:ring-2 focus:ring-[#A15C38]">
-                  <SelectValue placeholder="篩選標籤" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_VALUE}>所有標籤</SelectItem>
-                  {allTags.map(tag => (
-                    <SelectItem key={tag} value={tag}>
-                      {tag} ({tagCounts[tag] || 0})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-      
-              {/* Whiteboard Filter */}
-              <Select value={selectedWhiteboard} onValueChange={setSelectedWhiteboard}>
-                <SelectTrigger className="w-56 border border-[#C3A6A0] rounded-lg focus:ring-2 focus:ring-[#A15C38]">
-                  <SelectValue placeholder="篩選白板" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_VALUE}>所有白板</SelectItem>
-                  {whiteboards
-                    .filter(wb => wb.cards && wb.cards.length > 0)
-                    .map(wb => (
-                      <SelectItem key={wb._id} value={wb._id}>
-                        <div className="flex justify-between items-center w-full">
-                          <span>{wb.whiteboardTitle}</span>
-                          <span className="text-gray-500 text-sm">({wb.cards.length} 卡片)</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-      
-              {/* Sort Options */}
-              <Select value={sortBy} onValueChange={(value: 'updatedAt' | 'createdAt') => setSortBy(value)}>
-                <SelectTrigger className="w-40 border border-[#C3A6A0] rounded-lg focus:ring-2 focus:ring-[#A15C38]">
-                  <SelectValue placeholder="排序方式" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="updatedAt">
-                    <div className="flex items-center gap-2">
-                      <Clock size={16} />
-                      最近更新
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="createdAt">
-                    <div className="flex items-center gap-2">
-                      <Calendar size={16} />
-                      建立時間
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Sidebar with fixed position */}
+            <div className="fixed top-0 left-0 z-50">
+                <Sidebar />
             </div>
-          </div>
-      
-          {/* Main Content */}
-          <div className="mt-20 ml-16 p-8">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <span className="text-gray-500 text-lg">載入中...</span>
-              </div>
-            ) : (
-              <>
-                {filteredCards.length === 0 ? (
-                  <div className="flex justify-center items-center h-64">
-                    <span className="text-gray-500 text-lg">找不到卡片。</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-5 grid-rows-4 gap-6 max-w-7xl mx-auto">
-                      {paginatedCards.map((card) => (
-                        <Card
-                          key={card._id}
-                          {...card}
-                          onDelete={deleteCardHandler}
-                          isSelected={selectedCard?._id === card._id}
-                          onSelect={handleSelectCard}
-                          onCopyCard={handleCopyCard}
+
+            {/* Header Bar */}
+            <div className="fixed top-0 left-16 right-0 h-16 bg-white border-b border-[#C3A6A0] flex justify-center items-center px-4 z-10 shadow-md">
+                <div className="flex items-center gap-6 max-w-7xl w-full">
+                    {/* Search Input */}
+                    <div className="relative w-64">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                        <Input
+                            type="text"
+                            placeholder="搜尋卡片..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 w-full border border-[#C3A6A0] rounded-lg focus:ring-2 focus:ring-[#A15C38]"
                         />
-                      ))}
-      
-                      {/* Fill empty spaces to maintain a fixed 5x4 grid */}
-                      {paginatedCards.length < ITEMS_PER_PAGE &&
-                        Array.from({ length: ITEMS_PER_PAGE - paginatedCards.length }).map((_, index) => (
-                          <div key={`empty-${index}`} className="invisible"></div>
-                        ))}
                     </div>
-      
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                      <div className="mt-8 flex justify-center">
-                        <Pagination>
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                              />
-                            </PaginationItem>
-      
-                            {getPageNumbers(currentPage, totalPages).map((pageNum) => (
-                              <PaginationItem key={pageNum}>
-                                <PaginationLink
-                                  onClick={() => setCurrentPage(pageNum)}
-                                  isActive={currentPage === pageNum}
-                                  className="cursor-pointer"
-                                >
-                                  {pageNum}
-                                </PaginationLink>
-                              </PaginationItem>
+
+                    {/* Tag Filter */}
+                    <Select value={selectedTag} onValueChange={setSelectedTag}>
+                        <SelectTrigger className="w-40 border border-[#C3A6A0] rounded-lg focus:ring-2 focus:ring-[#A15C38]">
+                            <SelectValue placeholder="篩選標籤" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={ALL_VALUE}>所有標籤</SelectItem>
+                            {allTags.map(tag => (
+                                <SelectItem key={tag} value={tag}>
+                                    {tag} ({tagCounts[tag] || 0})
+                                </SelectItem>
                             ))}
-      
-                            {currentPage < totalPages - 2 && (
-                              <PaginationItem>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                            )}
-      
-                            <PaginationItem>
-                              <PaginationNext
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                              />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-      
-          {/* Fullscreen Edit Overlay */}
-          {isEditModalOpen && selectedCard && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-              <div className="bg-white p-8 overflow-auto rounded-lg shadow-lg max-w-4xl w-full h-full">
-                <FullscreenEdit
-                  card={selectedCard}
-                  onChange={(updatedFields) => setSelectedCard({ ...selectedCard, ...updatedFields })}
-                  onSave={handleModalSave}
-                  onCancel={() => setIsEditModalOpen(false)}
-                />
-              </div>
+                        </SelectContent>
+                    </Select>
+
+                    {/* Whiteboard Filter */}
+                    <Select value={selectedWhiteboard} onValueChange={setSelectedWhiteboard}>
+                        <SelectTrigger className="w-56 border border-[#C3A6A0] rounded-lg focus:ring-2 focus:ring-[#A15C38]">
+                            <SelectValue placeholder="篩選白板" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={ALL_VALUE}>所有白板</SelectItem>
+                            {whiteboards
+                                .filter(wb => wb.cards && wb.cards.length > 0)
+                                .map(wb => (
+                                    <SelectItem key={wb._id} value={wb._id}>
+                                        <div className="flex justify-between items-center w-full">
+                                            <span>{wb.whiteboardTitle}</span>
+                                            <span className="text-gray-500 text-sm">({wb.cards.length} 卡片)</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                        </SelectContent>
+                    </Select>
+
+
+
+                    {/* Sort Options */}
+                    <Select value={sortBy} onValueChange={(value: 'updatedAt' | 'createdAt') => setSortBy(value)}>
+                        <SelectTrigger className="w-40 border border-[#C3A6A0] rounded-lg focus:ring-2 focus:ring-[#A15C38]">
+                            <SelectValue placeholder="排序方式" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="updatedAt">
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} />
+                                    最近更新
+                                </div>
+                            </SelectItem>
+                            <SelectItem value="createdAt">
+                                <div className="flex items-center gap-2">
+                                    <Calendar size={16} />
+                                    建立時間
+                                </div>
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {/* Add new card button */}
+                    <button
+                        onClick={handleAddCard}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#A15C38] text-white rounded-lg hover:bg-[#8B4C34] transition duration-200 focus:outline-none shadow-md"
+                    >
+                        <Plus size={16} /> 新增卡片
+                    </button>
+                </div>
             </div>
-          )}
+
+            {/* Main Content */}
+            <div className="mt-20 ml-16 p-8">
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                        <span className="text-gray-500 text-lg">載入中...</span>
+                    </div>
+                ) : (
+                    <>
+                        {filteredCards.length === 0 ? (
+                            <div className="flex justify-center items-center h-64">
+                                <span className="text-gray-500 text-lg">找不到卡片。</span>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-4 grid-rows-4 gap-6 max-w-7xl mx-auto">
+                                    {paginatedCards.map((card) => (
+                                        <Card
+                                            key={card._id}
+                                            {...card}
+                                            onDelete={deleteCardHandler}
+                                            isSelected={selectedCard?._id === card._id}
+                                            onSelect={handleSelectCard}
+                                            onCopyCard={handleCopyCard}
+                                        />
+                                    ))}
+
+                                    {/* Fill empty spaces to maintain a fixed 4x4 grid */}
+                                    {paginatedCards.length < ITEMS_PER_PAGE &&
+                                        Array.from({ length: ITEMS_PER_PAGE - paginatedCards.length }).map((_, index) => (
+                                            <div key={`empty-${index}`} className="invisible"></div>
+                                        ))}
+                                </div>
+
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <div className="mt-8 flex justify-center">
+                                        <Pagination>
+                                            <PaginationContent>
+                                                <PaginationItem>
+                                                    <PaginationPrevious
+                                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                    />
+                                                </PaginationItem>
+
+                                                {getPageNumbers(currentPage, totalPages).map((pageNum) => (
+                                                    <PaginationItem key={pageNum}>
+                                                        <PaginationLink
+                                                            onClick={() => setCurrentPage(pageNum)}
+                                                            isActive={currentPage === pageNum}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {pageNum}
+                                                        </PaginationLink>
+                                                    </PaginationItem>
+                                                ))}
+
+                                                {currentPage < totalPages - 2 && (
+                                                    <PaginationItem>
+                                                        <PaginationEllipsis />
+                                                    </PaginationItem>
+                                                )}
+
+                                                <PaginationItem>
+                                                    <PaginationNext
+                                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                    />
+                                                </PaginationItem>
+                                            </PaginationContent>
+                                        </Pagination>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </>
+                )}
+            </div>
+
+            {/* Fullscreen Edit Overlay */}
+            {isEditModalOpen && selectedCard && (
+                <FullscreenEdit
+                    card={selectedCard}
+                    onChange={(updatedFields) => setSelectedCard({ ...selectedCard, ...updatedFields })}
+                    onSave={handleModalSave}
+                    onCancel={() => setIsEditModalOpen(false)}
+                />
+            )}
         </div>
-      );
+    );
+
 };
 
 export default Management;
