@@ -30,6 +30,7 @@ import {
 import { getUserByName } from '@/services/userService'; 
 import { UserData } from '@/interfaces/User/UserData'; 
 import FullscreenEdit from '@/components/specific/Management/FullscreenEdit';
+import { createCardWithWhiteboard } from '@/services/cardService'; 
 
 const ITEMS_PER_PAGE = 16; // Number of cards displayed per page
 const MAX_VISIBLE_PAGES = 5; // Maximum number of pages to display in pagination
@@ -338,7 +339,6 @@ const Management: React.FC = () => {
         }
     };
 
-    // 13. Add a new card
     const handleAddCard = async () => {
         try {
             const newCardData: Omit<CardData, '_id'> = {
@@ -349,68 +349,49 @@ const Management: React.FC = () => {
                 foldOrNot: false,
                 position: { x: 0, y: 0 },
                 dimensions: { width: 300, height: 200 },
-                connection: undefined,
-                connectionBy: undefined,
+                connection: [],
+                connectionBy: [],
                 comments: [],
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
-            const createdCard = await createCard(newCardData);
-            console.log("新建的卡片：", createdCard);
-
-            setCards(prevCards => [...prevCards, createdCard]);
-
-            // Add the new card to the selected whiteboard if any
+    
+            // Ensure there is at least one whiteboard
+            let whiteboardId: string | null = null;
             if (selectedWhiteboard !== ALL_VALUE) {
-                const targetWhiteboard = whiteboards.find(wb => wb._id === selectedWhiteboard);
-                if (targetWhiteboard) {
-                    setWhiteboards(prevWhiteboards => prevWhiteboards.map(wb => {
-                        if (wb._id === targetWhiteboard._id) {
-                            return {
-                                ...wb,
-                                cards: [...wb.cards, createdCard]
-                            };
-                        }
-                        return wb;
-                    }));
-                } else {
-                    // If the selected whiteboard is not found, insert into the first whiteboard
-                    if (whiteboards.length > 0) {
-                        const firstWhiteboard = whiteboards[0];
-                        setWhiteboards(prevWhiteboards => prevWhiteboards.map(wb => {
-                            if (wb._id === firstWhiteboard._id) {
-                                return {
-                                    ...wb,
-                                    cards: [...wb.cards, createdCard]
-                                };
-                            }
-                            return wb;
-                        }));
-                    }
-                }
-            } else {
-                // Insert into the first whiteboard
-                if (whiteboards.length > 0) {
-                    const firstWhiteboard = whiteboards[0];
-                    setWhiteboards(prevWhiteboards => prevWhiteboards.map(wb => {
-                        if (wb._id === firstWhiteboard._id) {
-                            return {
-                                ...wb,
-                                cards: [...wb.cards, createdCard]
-                            };
-                        }
-                        return wb;
-                    }));
-                }
+                whiteboardId = selectedWhiteboard;
+            } else if (whiteboards.length > 0) {
+                whiteboardId = whiteboards[0]._id;
             }
-
-
+            console.log("Selected Whiteboard ID:", whiteboardId);
+            if (!whiteboardId) {
+                toast.error('請選擇一個白板');
+                throw new Error('沒有選擇的白板，且白板列表為空');
+            }
+    
+            // Use the createCardWithWhiteboard function to associate the new card with the selected whiteboard
+            const createdCard = await createCardWithWhiteboard(whiteboardId, newCardData);
+            console.log("新建的卡片：", createdCard);
+    
+            setCards(prevCards => [...prevCards, createdCard]);
+    
+            setWhiteboards(prevWhiteboards => prevWhiteboards.map(wb => {
+                if (wb._id === whiteboardId) {
+                    return {
+                        ...wb,
+                        cards: [...wb.cards, createdCard] as CardData[]// Push the new card into the whiteboard's cards array
+                    };
+                }
+                return wb;
+            }));
+    
             toast.success('卡片已新增');
-        } catch (error) {
+        } catch (error:any) {
             console.error('新增卡片失敗：', error);
-            toast.error('新增卡片失敗');
+            toast.error(`新增卡片失敗：${error.message}`);
         }
     };
+    
 
     // 14. Display loading or error messages
     if (userError) {

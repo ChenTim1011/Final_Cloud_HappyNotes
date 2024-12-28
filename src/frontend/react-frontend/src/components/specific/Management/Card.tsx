@@ -47,7 +47,7 @@ const Card: React.FC<CardProps> = React.memo(({
     // Handle delete button click
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent triggering onSelect
-        const confirmDelete = window.confirm('Are you sure you want to delete this card?');
+        const confirmDelete = window.confirm('你確定要刪除這一張卡片嗎?');
         if (confirmDelete) {
             onDelete(_id);
         }

@@ -78,6 +78,24 @@ export const createCard = async (card: Omit<CardData, '_id'>): Promise<CardData>
     return data;
 };
 
+// POST /api/cards/withWhiteboardId - Create a new card with a whiteboard ID
+export const createCardWithWhiteboard = async (whiteboardId: string, card: Omit<CardData, '_id'>): Promise<CardData> => {
+    const response = await fetch(`${API_BASE_URL}/withWhiteboardId`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ whiteboardId, ...card }),
+    });
+
+    if (!response.ok) {
+        await handleRequestError(response, 'Failed to create card with whiteboard');
+    }
+
+    const data: CardData = await response.json();
+    return data;
+};
+
 
 export const updateCard = async (id: string, card: Partial<CardData>): Promise<CardData> => {
     console.warn('Consider using patchCard for partial updates instead of updateCard');

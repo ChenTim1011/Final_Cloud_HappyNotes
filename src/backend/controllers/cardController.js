@@ -1,5 +1,5 @@
 const Card = require("../models/Card");
-
+const Whiteboard = require("../models/Whiteboard");
 // Get all cards
 const GET_CARDS = async (req, res) => {
   try {
@@ -48,6 +48,72 @@ const POST_CARD = async (req, res) => {
   }
 };
 
+// Create a new card and associate it with a whiteboard
+const POST_CARD_WHITEBOARD_ID = async (req, res) => {
+  try {
+    const {
+      whiteboardId,
+      cardTitle,
+      content,
+      dueDate,
+      tag,
+      foldOrNot,
+      position,
+      dimensions,
+      connection,
+    } = req.body;
+
+    console.log("Received request body:", req.body);
+
+    // Check if whiteboardId is provided
+    if (!whiteboardId) {
+      console.error("白板 ID 缺失");
+      return res.status(400).json({ error: "whiteboardId 是必填項目" });
+    }
+
+    // Check if whiteboardId is valid
+    const newCard = new Card({
+      cardTitle,
+      content,
+      dueDate: dueDate || null,
+      tag,
+      foldOrNot: foldOrNot || false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      position,
+      dimensions,
+      connection,
+    });
+
+    console.log("Creating new card:", newCard);
+
+    const savedCard = await newCard.save();
+    console.log("Saved card:", savedCard);
+
+    // Associate the card with the whiteboard
+    const whiteboard = await Whiteboard.findById(whiteboardId).populate(
+      "cards"
+    );
+    if (!whiteboard) {
+      console.error("找不到指定的白板 ID:", whiteboardId);
+      return res.status(404).json({ error: "找不到指定的白板" });
+    }
+
+    whiteboard.cards.push(savedCard._id);
+    await whiteboard.save();
+    console.log("Updated whiteboard:", whiteboard);
+
+    // Return the saved card
+    res.status(201).json(savedCard.toObject());
+  } catch (error) {
+    console.error("Error in POST_CARD_WHITEBOARD_ID:", error);
+    res.status(400).json({
+      error: "新增卡片並關聯白板失敗",
+      details: error.message,
+    });
+  }
+};
+
 // Update a card by ID
 const PUT_CARD = async (req, res) => {
   try {
@@ -88,6 +154,8 @@ const PUT_CARD = async (req, res) => {
     });
   }
 };
+
+//
 
 // Delete a card by ID
 const DELETE_CARD = async (req, res) => {
@@ -208,4 +276,5 @@ module.exports = {
   DELETE_CARD,
   PATCH_CARD,
   PATCH_CARDS_BATCH,
+  POST_CARD_WHITEBOARD_ID,
 };

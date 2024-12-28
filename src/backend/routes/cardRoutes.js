@@ -11,6 +11,9 @@ router.get("/", cardController.GET_CARDS);
 // Create a new card
 router.post("/", cardController.POST_CARD);
 
+// Create a new card and associate it with a whiteboard
+router.post("/withWhiteboardId", cardController.POST_CARD_WHITEBOARD_ID);
+
 // Update a card by ID
 router.put("/:id", cardController.PUT_CARD);
 

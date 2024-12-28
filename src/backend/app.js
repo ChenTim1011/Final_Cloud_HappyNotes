@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const bodyParser = require("body-parser");
 const cors = require("cors");
 const whiteboardRoutes = require("./routes/whiteboardRoutes");
 const cardRoutes = require("./routes/cardRoutes");
@@ -16,7 +17,8 @@ app.use(
     credentials: true,
   })
 );
-
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 app.use(express.json());
 app.use("/api/whiteboards", whiteboardRoutes);
 app.use("/api/cards", cardRoutes);

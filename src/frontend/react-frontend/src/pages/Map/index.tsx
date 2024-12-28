@@ -124,7 +124,7 @@ const Map: React.FC = () => {
 
     // Handle deleting a whiteboard
     const handleDeleteWhiteboard = async (id: string) => {
-        if (window.confirm('Are you sure you want to delete this whiteboard?')) {
+        if (window.confirm('你確定要刪除這個白板嗎?')) {
             try {
                 await deleteWhiteboardById(id);
                 // Update state to remove the deleted whiteboard
