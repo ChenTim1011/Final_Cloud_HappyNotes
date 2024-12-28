@@ -1,6 +1,6 @@
 // src/pages/Map.tsx - Updated to include a context menu with "新增白板" option
 
-import React, { useState, useEffect, FormEvent, useRef } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
 import { WhiteboardUpdateData } from '@/interfaces/Whiteboard/WhiteboardUpdateData';
@@ -20,10 +20,10 @@ const Map: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-    const [isAdding, setIsAdding] = useState<boolean>(false); // New state to track if adding
+    const [isAdding, setIsAdding] = useState<boolean>(false); // Track if adding a whiteboard
     const [newWhiteboardTitle, setNewWhiteboardTitle] = useState<string>('');
     const [newWhiteboardPrivate, setNewWhiteboardPrivate] = useState<boolean>(false);
-    const draggedRef = useRef<boolean>(false); 
+    const [draggingWhiteboardId, setDraggingWhiteboardId] = useState<string | null>(null); // Track which whiteboard is being dragged
 
     // Fetch whiteboards data from the backend when the component mounts
     useEffect(() => {
@@ -201,6 +201,9 @@ const Map: React.FC = () => {
         } catch (err: any) {
             console.error('Failed to update whiteboard position:', err);
             alert(err.message || 'Failed to update whiteboard position');
+        } finally {
+            // Reset dragging state
+            setDraggingWhiteboardId(null);
         }
     };
 
@@ -235,11 +238,10 @@ const Map: React.FC = () => {
                         key={whiteboard._id}
                         size={{ width: whiteboard.dimensions.width, height: whiteboard.dimensions.height }}
                         position={{ x: whiteboard.position.x, y: whiteboard.position.y }}
-                        onDragStart={() => { draggedRef.current = false; }}
-                        onDrag={() => { draggedRef.current = true; }}
+                        onDragStart={() => { setDraggingWhiteboardId(whiteboard._id); }}
+                        onDrag={() => { /* Optional: Additional logic during drag */ }}
                         onDragStop={(e, d) => { 
                             handleDragStop(whiteboard._id, d); 
-                            draggedRef.current = true; 
                         }}
                         bounds="parent"
                         dragHandleClassName="drag-handle"
@@ -248,7 +250,7 @@ const Map: React.FC = () => {
                         <div
                             className="relative bg-white border border-[#C3A6A0] shadow-xl rounded-2xl p-6 cursor-pointer transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
                             onClick={() => {
-                                if (!draggedRef.current) {
+                                if (!draggingWhiteboardId) {
                                     navigate(`/whiteboard/${whiteboard._id}`);
                                 }
                             }}

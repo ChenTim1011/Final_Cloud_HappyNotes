@@ -1,8 +1,8 @@
-// src/components/specific/Card/text-editor/quilleditor.tsx
-
-import React, { useState, useRef, useEffect } from "react";
+// Import React and necessary hooks
+import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css"; // Quill 樣式
+import "react-quill/dist/quill.bubble.css"; // Use the bubble theme styles
+import "./quilleditor.css"; // Import custom styles
 
 // Define supported formats for the editor
 const formats = [
@@ -20,51 +20,49 @@ const formats = [
 
 // Define the toolbar module
 const modules = {
-  toolbar: {
-    container: [
-      [{ header: [1, 2, false] }], // Header options
-      ["bold", "italic", "underline", "strike"], // Text styling
-      [{ list: "ordered" }, { list: "bullet" }], // Ordered and unordered lists
-      ["link", "image", "code-block"], // Insert links, images, and code blocks
-    ],
-  },
+  toolbar: [
+    [{ header: [1, 2, false] }], // Header options
+    ["bold", "italic", "underline", "strike"], // Text styles
+    [{ list: "ordered" }, { list: "bullet" }], // Ordered and unordered lists
+    ["link", "image", "code-block"], // Insert links, images, and code blocks
+  ],
 };
 
 interface QuillEditorProps {
   content: string; // Initial content of the editor
-  handleContentChange2: (content: string) => void; // Callback when content changes
-  readOnly?: boolean; // 是否為只讀模式
-  theme?: "snow" | "bubble"; // Quill 主題
-  onHeightChange?: (height: number) => void; // Callback for height changes
+  handleContentChange2: (content: string) => void; // Callback for content change
+  readOnly?: boolean; // Read-only mode flag
+  theme?: "bubble" | "snow"; // Quill theme
+  onHeightChange?: (height: number) => void; // Callback for height change
 }
 
-const QuillEditor: React.FC<QuillEditorProps> = ({ 
-  content, 
+const QuillEditor: React.FC<QuillEditorProps> = ({
+  content,
   handleContentChange2,
   readOnly = false,
-  theme = "snow",
-  onHeightChange
+  theme = "bubble", // Default to the bubble theme
+  onHeightChange,
 }) => {
   const [value, setValue] = useState<string>(content); // State to manage editor content
   const editorRef = useRef<HTMLDivElement>(null); // Reference to the editor container
 
-  // Handle content changes in the editor
+  // Handle content changes
   const handleChange = (content: string) => {
     setValue(content); // Update local state
-    handleContentChange2(content); // Trigger the callback to propagate changes
+    handleContentChange2(content); // Trigger the callback to pass changes
   };
 
-  // Use useEffect to adjust editor height based on content
-  useEffect(() => {
+  // Adjust the editor height dynamically based on content using useLayoutEffect
+  useLayoutEffect(() => {
     if (editorRef.current) {
       const editor = editorRef.current.querySelector(".ql-editor");
       if (editor) {
-        // Reset height to auto to recalculate
+        // Reset height to recalculate
         (editor as HTMLElement).style.height = "auto";
         // Set new height based on scrollHeight
-        const newHeight = Math.max(editor.scrollHeight, 400);
+        const newHeight = (editor as HTMLElement).scrollHeight;
         editorRef.current.style.height = `${newHeight}px`;
-        // Call onHeightChange callback if provided
+        // Call the onHeightChange callback if provided
         if (onHeightChange) {
           onHeightChange(newHeight);
         }
@@ -72,23 +70,28 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
     }
   }, [value, readOnly, onHeightChange]);
 
+  // Sync external content changes (e.g., updates from the parent component)
+  useEffect(() => {
+    setValue(content);
+  }, [content]);
+
   return (
     <div
       ref={editorRef}
-      className={`border border-gray-300 p-2 overflow-hidden ${
+      className={`editor-container border border-gray-300 p-2 overflow-visible ${
         readOnly ? "cursor-default" : "cursor-text"
       }`}
-      style={{ minHeight: "150px" }} // Set minimum height
+      style={{ position: "relative", zIndex: 10000, height: '100%' }} // Ensure relative positioning, z-index, and full container height
     >
       <ReactQuill
         value={value}
         onChange={handleChange}
-        modules={readOnly ? {} : modules}
+        modules={readOnly ? {} : modules} // Define modules based on read-only mode
         formats={formats}
-        placeholder="請輸入內容..."
+        placeholder="Please enter content..."
         readOnly={readOnly}
-        theme={theme}
-        style={{ height: "auto" }} // Allow Quill editor to adjust height based on content
+        theme={theme} // Use the bubble theme
+        style={{ height: "100%", flexGrow: 1, zIndex: 10001 }} // Ensure the editor fills the container and enables scrolling
       />
     </div>
   );

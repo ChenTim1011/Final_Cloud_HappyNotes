@@ -55,43 +55,46 @@ const Card: React.FC<CardProps> = React.memo(({
 
 
 
-return (
-  <div
-    className={`card-container ${isSelected ? 'selected' : ''} bg-[#F7F1F0] border border-[#C3A6A0] shadow-md rounded-lg p-5`}
-    onClick={handleClick}
-    onContextMenu={handleRightClick}
-  >
-    <div className="card-content">
-      {/* Header with buttons */}
-      <div className="flex justify-between items-center mb-4">
-        {/* Tag Component */}
-        <Tag currentTag={tag} onUpdateTag={() => {}} />
-
-        {/* Delete button */}
-        <button
-          onClick={handleDelete}
-          className="text-red-500 hover:text-red-700 focus:outline-none text-lg"
-          title="Delete Card"
-        >
-          🗑️
-        </button>
-      </div>
-
-      {/* Title */}
-      <h3 className="text-xl font-serif font-bold text-[#262220] mt-2">
-        {cardTitle}
-      </h3>
-
-      {/* Content Wrapper with Scroll */}
-      
+    return (
         <div
-          className="ql-editor text-[#262220] font-normal"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
-  
-    </div>
-  </div>
-);
+            className={`card-container ${isSelected ? 'selected' : ''} bg-[#F7F1F0] border border-[#C3A6A0] shadow-md rounded-lg p-5`}
+            onClick={handleClick}
+            onContextMenu={handleRightClick}
+        >
+            <div className="card-content">
+                {/* Header with Tag and Action Buttons */}
+                <div className="flex justify-between items-center mb-4">
+                    {/* Tag Component */}
+                    <Tag currentTag={tag} onUpdateTag={() => { /* If we need to edit tag */ }} />
+
+                    <div className="flex items-center space-x-2">
+
+                        {/* Delete button */}
+                        <button
+                            onClick={handleDelete}
+                            className="text-red-500 hover:text-red-700 focus:outline-none text-lg"
+                            title="刪除卡片"
+                        >
+                           🗑️
+                        </button>
+                    </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="text-xl font-serif font-bold text-[#262220] mt-2">
+                    {cardTitle}
+                </h3>
+
+                {/* Content Wrapper */}
+                <div
+                    className="ql-editor text-[#262220] font-normal mt-2 overflow-hidden text-ellipsis"
+                    style={{ maxHeight: '100px', overflow: 'hidden' }}
+                    dangerouslySetInnerHTML={{ __html: content }}
+                />
+
+            </div>
+        </div>
+    );
 });
 
 export default Card;

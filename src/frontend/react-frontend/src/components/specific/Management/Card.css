@@ -2,6 +2,7 @@
     width: 240px; /* Increase width for better visibility */
     height: 300px; /* Increase height */
     box-sizing: border-box;
+    margin: 16px; /* Add spacing around each card */
     padding: 12px; /* Add padding */
     cursor: pointer;
     transition: box-shadow 0.3s ease, transform 0.2s ease; /* Add hover animation effects */
