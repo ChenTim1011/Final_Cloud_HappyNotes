@@ -98,12 +98,12 @@ const Whiteboard: React.FC = () => {
         }
 
         const position = { 
-            x: x - window.scrollX, 
-            y: y - window.scrollY 
+            x: x , 
+            y: y  
         };
 
         const newCardData: Omit<CardData, '_id'> = {
-            cardTitle: cardData ? `${cardData.cardTitle} Copy` : '新卡片',
+            cardTitle: cardData ? `${cardData.cardTitle} ` : '新卡片',
             content: cardData ? cardData.content : '新內容',
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -167,6 +167,13 @@ const Whiteboard: React.FC = () => {
         }
     };
 
+    // Handle click outside: Closes the context menu when clicked outside
+    const handleClickOutside = (e: MouseEvent) => {
+        if (contextMenu && e.button === 0) { 
+            setContextMenu(null);
+        }
+    };
+
     // Update card content: Updates the content of a specific card
     const updateCardHandler = async (cardId: string, updatedFields: Partial<CardData>) => {
         try {
@@ -199,32 +206,36 @@ const Whiteboard: React.FC = () => {
             const rect = whiteboardRef.current.getBoundingClientRect();
             relativeX = e.clientX - rect.left;
             relativeY = e.clientY - rect.top;
-            console.log(`Relative Position - X: ${relativeX}, Y: ${relativeY}`);
         }
 
-        console.log('Right-click detected on:', cardId ? `Card ${cardId}` : 'Empty area'); 
+        let actions: ('add' | 'delete' | 'paste')[] = [];
+        if (cardId) {
+            // If a card is right-clicked, show the delete option
+            actions = ['delete'];
+        } else {
+            // If the space is right-clicked, show the add option
+            actions = ['add', ...(copiedCard ? ['paste'] : [])] as ('add' | 'delete' | 'paste')[];
+        }
 
         setContextMenu({
             x: relativeX,
             y: relativeY,
-            actions: [
-                'add',
-                ...(copiedCard ? ['paste'] : []),
-                ...(cardId ? ['delete'] : [])
-            ] as ('add' | 'delete' | 'paste')[]
+            actions: actions,
         });
     };
 
-    // Handle keydown events to delete the selected card
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Delete' && selectedCardId) {
-            deleteCardHandler(selectedCardId);
-        }
-    };
 
     const handleSelectCard = (cardId: string) => {
         setSelectedCardId(cardId);
     };
+
+    useEffect(() => {
+        const listener = (e: MouseEvent) => handleClickOutside(e);
+        window.addEventListener('click', listener);
+        return () => {
+            window.removeEventListener('click', listener);
+        };
+    }, [contextMenu]);
 
     if (loading) {
         return <div className="p-5 text-center">Loading...</div>;
@@ -235,7 +246,7 @@ const Whiteboard: React.FC = () => {
     }
 
     return (
-        <div className="relative w-full h-screen bg-[#F7F1F0]">
+        <div className="relative w-full h-screen bg-[#F7F1F0] z-40">
             {/* Render the sidebar and the main content */}
             <div className="flex">
                 {/* Sidebar */}
@@ -244,7 +255,7 @@ const Whiteboard: React.FC = () => {
                 </div>
         
                 {/* Whiteboard Title Row */}
-                <div className="flex-grow ml-5">
+                <div className="flex-grow ">
                     <div className="bg-[#F7F1F0] py-4 shadow-md rounded-b-lg">
                         <h2 className="text-4xl font-serif font-extrabold text-center text-black tracking-wide">
                             {whiteboard ? whiteboard.whiteboardTitle : '載入中...'}
@@ -255,9 +266,10 @@ const Whiteboard: React.FC = () => {
         
             {/* Main Content */}
             <div
-                className="flex-grow overflow-auto bg-[#C3A6A0]"
+                className="flex-grow overflow-auto bg-[#C3A6A0] "
                 style={{ width: '10000px', height: '10000px' }}
                 ref={whiteboardRef}
+                onContextMenu={(e) => handleRightClick(e)}
             >
                 {/* Card Rendering Section */}
                 {cards.map((card) => (
@@ -277,7 +289,7 @@ const Whiteboard: React.FC = () => {
                 {/* Context Menu */}
                 {contextMenu && (
                     <div
-                        className="absolute bg-white border border-[#C3A6A0] text-[#262220] p-3 rounded-lg z-50 shadow-lg cursor-pointer"
+                        className="absolute bg-white border border-[#C3A6A0] text-[#262220] p-3 rounded-lg z-100 shadow-lg cursor-pointer"
                         style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -305,7 +317,10 @@ const Whiteboard: React.FC = () => {
                             <div
                                 className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
                                 onClick={() => {
-                                    deleteCardHandler(selectedCardId);
+                                    const confirmDelete = window.confirm('你確定要刪除這張卡片嗎？');
+                                    if (confirmDelete) {
+                                        deleteCardHandler(selectedCardId);
+                                    }
                                 }}
                             >
                                 刪除卡片

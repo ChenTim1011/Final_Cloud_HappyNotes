@@ -206,7 +206,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
 
 
-    // 處理調整大小並立即顯示
+    // Resize handler to update dimensions and position
     const handleResize = useCallback((size: { width: number; height: number }, position: { x: number; y: number }) => {
         const newDimensions = {
             width: Math.max(size.width, MIN_WIDTH),
@@ -314,7 +314,7 @@ const Card: React.FC<CardProps> = React.memo(({
           maxWidth={isFullscreen ? '100vw' : MAX_WIDTH}
           className={`${
             isSelected ? 'ring-4 ring-[#A15C38]' : ''
-          } ${isFullscreen ? 'fullscreen-card' : ''}`}
+          } ${isFullscreen ? 'fullscreen-card' : 'z-60'}`}
           style={isFullscreen ? { position: 'fixed', top: 0, left: 0, zIndex: 9999 } : {}}
         >
           <div
