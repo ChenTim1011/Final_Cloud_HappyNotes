@@ -694,7 +694,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
         <div
             className="card-container"
-            style={{ position: 'relative', zIndex: 1 }}
+            style={{ position: 'relative'}}
         >
             {/* SVG for connections */}
             <svg
@@ -798,6 +798,9 @@ const Card: React.FC<CardProps> = React.memo(({
             )}
             <Rnd
                 className={`card ${isFolded ? 'folded' : ''}`}
+                style={{
+                    zIndex: 9, // 卡片的層級低於連線
+                }}
                 size={isFullscreen ? { width: '100vw', height: '100vh' } : localDimensions}
                 position={isFullscreen ? { x: 0, y: 0 } : localPosition}
                 onDragStop={(e, d) => {
