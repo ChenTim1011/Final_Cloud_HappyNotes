@@ -201,6 +201,128 @@ const PATCH_CARDS_BATCH = async (req, res) => {
   }
 };
 
+// PATCH connections of a card
+const PATCH_CONNECTIONS = async (req, res) => {
+  //console.log("LLLLLLLLLLLLLLLLLLLLLL");
+  //console.log("Received request for PATCH /cards/:id/connections");
+  //console.log("Request body:", req.body);
+  try {
+    const { id } = req.params; // 獲取卡片 ID
+    const { connections } = req.body; // 獲取更新的 connections 數據
+
+    // 驗證連線數據
+    if (!Array.isArray(connections)) {
+      return res.status(400).json({ error: "Connections must be an array." });
+    }
+
+    // 找到目標卡片
+    const card = await Card.findById(id);
+    //console.log("Found card:", card);
+
+    if (!card) {
+      return res.status(404).json({ error: "Card not found." });
+    }
+
+    // 更新卡片的連線字段
+    //card.connections.push(connections);
+    //card.connections.push(...connections);
+    card.connections = [...card.connections, ...connections];
+    card.updatedAt = new Date(); // 更新時間
+
+    // 保存更新
+    console.log("Before saving:", card.connections);
+    await card.save();
+    console.log("After saving:", card.connections);
+
+    res.status(200).json({
+      message: "Connections updated successfully.",
+      connections: card.connections,
+    });
+  } catch (error) {
+    console.error("Error updating connections:", error);
+    res.status(500).json({
+      error: "Failed to update connections.",
+      details: error.message,
+    });
+  }
+};
+
+
+const DELETE_CONNECTION = async (req, res) => {
+  try {
+    const id = req.params.id; // 確保這行在使用 id 之前
+    const connectionId = req.params.connectionId;
+    //console.log("PPPPDELETE_CONNECTION:",id,connectionId)
+
+    // 查找卡片
+    const card = await Card.findById(id);
+    console.log("OOOODELETE_CONNECTION:",id,connectionId)
+    //console.log("OOOO",card)
+    if (!card) {
+      return res.status(404).json({ error: "Card not found." });
+    }
+
+    // 查找並移除連線
+    const originalConnections = card.connections;
+    //console.log("Original Connections:", originalConnections);
+    const updatedConnections = originalConnections.filter(
+      (connection) => connection.id !== connectionId
+    );
+
+    if (originalConnections.length === updatedConnections.length) {
+      return res.status(404).json({ error: "Connection not found." });
+    }
+   // console.log("PPPPbefore_connections", card.connections)
+    card.connections = updatedConnections;
+    //console.log("PPPPafter_connections", card.connections)
+    card.updatedAt = new Date(); // 更新時間戳
+
+    // 保存更新後的卡片
+    await card.save();
+
+    res.status(200).json({
+      message: "Connection deleted successfully.",
+      connections: card.connections,
+    });
+  } catch (error) {
+    console.error("Error deleting connection:", error);
+    res.status(500).json({
+      error: "Failed to delete connection.",
+      details: error.message,
+    });
+  }
+};
+
+const UPDATE_CONNECTION = async (req, res) => {
+  const { id, connectionId } = req.params; // 卡片 ID 和連線 ID
+  const updates = req.body; // 動態接收需要更新的屬性
+
+  try {
+      const card = await Card.findById(id); // 假設連線存儲在 Card 中
+      if (!card) {
+          return res.status(404).json({ error: "Card not found" });
+      }
+
+      const connection = card.connections.find((conn) => conn.id === connectionId);
+      if (!connection) {
+          return res.status(404).json({ error: "Connection not found" });
+      }
+
+      // 動態更新屬性
+      Object.keys(updates).forEach((key) => {
+          if (updates[key] !== undefined) {
+              connection[key] = updates[key];
+          }
+      });
+
+      await card.save(); // 保存更新後的卡片
+      res.status(200).json({ message: "Connection updated successfully", connection });
+  } catch (err) {
+      console.error("Error updating connection:", err);
+      res.status(500).json({ error: "Failed to update connection" });
+  }
+};
+
 module.exports = {
   GET_CARDS,
   POST_CARD,
@@ -208,4 +330,7 @@ module.exports = {
   DELETE_CARD,
   PATCH_CARD,
   PATCH_CARDS_BATCH,
+  PATCH_CONNECTIONS,
+  DELETE_CONNECTION,
+  UPDATE_CONNECTION,
 };

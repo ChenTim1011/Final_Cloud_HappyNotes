@@ -16,10 +16,16 @@ app.use(
 );
 
 app.use(express.json());
+
+// 調試 whiteboard 路由
+
 app.use("/api/whiteboards", whiteboardRoutes);
+//app.use("/api/cards", cardRoutes);
 app.use("/api/cards", cardRoutes);
+
 
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
