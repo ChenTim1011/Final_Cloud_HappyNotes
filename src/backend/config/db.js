@@ -1,14 +1,9 @@
 // config/db.js
 const mongoose = require("mongoose");
 const fs = require("fs");
-const path = require("path");
-const dotenv = require("dotenv");
 
 // Load environment variables
 const NODE_ENV = process.env.NODE_ENV || "development";
-
-const envPath = NODE_ENV === "production" ? ".env.production" : ".env";
-dotenv.config({ path: path.resolve(__dirname, "../../", envPath) });
 
 let uri;
 let options = {};

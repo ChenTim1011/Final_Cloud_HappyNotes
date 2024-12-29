@@ -1,4 +1,10 @@
-require("dotenv").config();
+const path = require("path");
+const dotenv = require("dotenv");
+
+const NODE_ENV = process.env.NODE_ENV || "development";
+const envPath = NODE_ENV === "production" ? ".env.production" : ".env";
+dotenv.config({ path: path.resolve(__dirname, ".", envPath) });
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -6,6 +12,8 @@ const whiteboardRoutes = require("./routes/whiteboardRoutes");
 const cardRoutes = require("./routes/cardRoutes");
 const userRoutes = require("./routes/userRoutes");
 const loginRoutes = require("./routes/loginRoutes");
+
+require("./config/db");
 
 const app = express();
 
