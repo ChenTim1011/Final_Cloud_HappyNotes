@@ -5,6 +5,14 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 const envPath = NODE_ENV === "production" ? ".env.production" : ".env";
 dotenv.config({ path: path.resolve(__dirname, ".", envPath) });
 
+// Debugging
+console.log(
+  "Loading environment variables from:",
+  path.resolve(__dirname, ".", envPath)
+);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("DB_SSL_CA:", process.env.DB_SSL_CA);
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
