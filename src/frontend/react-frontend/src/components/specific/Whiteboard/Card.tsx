@@ -690,6 +690,38 @@ const Card: React.FC<CardProps> = React.memo(({
             window.removeEventListener('mouseup', activeConnection_handleMouseUp);
         };
     }, [activeConnection, position]);
+
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // 檢查是否按下 Ctrl+C 或 Cmd+C
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+                e.preventDefault(); // 阻止默認行為（例如，複製到剪貼簿）
+                if (isSelected) {
+                    onCopyCard({
+                        _id,
+                        cardTitle,
+                        content,
+                        dueDate,
+                        tag,
+                        foldOrNot,
+                        position,
+                        dimensions,
+                        comments,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                    });
+                    console.log('Card copied:', _id);
+                }
+            }
+        };
+    
+        window.addEventListener('keydown', handleKeyDown);
+    
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isSelected, _id, cardTitle, content, dueDate, tag, foldOrNot, position, dimensions, comments, onCopyCard]);
     return (
 
         <div
@@ -784,6 +816,7 @@ const Card: React.FC<CardProps> = React.memo(({
                         width: '100vw',
                         height: '100vh',
                         pointerEvents: 'none',
+                        zIndex: 11,
                     }}
                 >
                     <line

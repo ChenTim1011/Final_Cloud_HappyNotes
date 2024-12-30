@@ -1,5 +1,5 @@
 // src/pages/Whiteboard.tsx - Displays the whiteboard page with cards 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef,useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import Card from '@/components/specific/Whiteboard/Card';
 import { CardData } from '@/interfaces/Card/CardData';
@@ -36,6 +36,7 @@ const Whiteboard: React.FC = () => {
 
     const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
     const whiteboardRef = useRef<HTMLDivElement>(null);
+    const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
 
     // Fetch whiteboard and associated cards data when the component mounts or id changes
     useEffect(() => {
@@ -123,51 +124,50 @@ const Whiteboard: React.FC = () => {
         );
     };
     // Add a new card at the specified x and y coordinates
-    const addCard = async (x: number, y: number, cardData?: CardData) => {
-        // Early return if whiteboard is not loaded or ID is undefined
-        if (!whiteboard || !whiteboard._id) {
-            console.error("Whiteboard is not loaded or ID is undefined");
-            return;
-        }
-
-        const position = {
-            x: x - window.scrollX,
-            y: y - window.scrollY
-        };
-
-        const newCardData: Omit<CardData, '_id'> = {
-            cardTitle: cardData ? `${cardData.cardTitle} Copy` : '新卡片',
-            content: cardData ? cardData.content : '新內容',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            dueDate: cardData && cardData.dueDate ? new Date(cardData.dueDate) : new Date(),
-            tag: cardData ? cardData.tag : '',
-            foldOrNot: cardData ? cardData.foldOrNot : false,
-            position: position,
-            dimensions: cardData ? { ...cardData.dimensions } : { width: 300, height: 300 },
-            connections: cardData ? cardData.connections : [],
-            comments: cardData ? cardData.comments : [],
-        };
-
-        try {
-            // Create a new card and add it to the state
-            const createdCard = await createCard(newCardData);
-            console.log("Created Card:", createdCard);
-
-            if (createdCard._id) {
-                // Update the local state to include the new card
-                setCards(prevCards => [...prevCards, createdCard]);
-
-                // Update the whiteboard to include the new card
-                const updatedCardIds = [...(whiteboard.cards || []).map(card => typeof card === 'string' ? card : card._id), createdCard._id];
-                await updateWhiteboard(whiteboard._id, { cards: updatedCardIds });
+    const addCard = useCallback(
+        async (x: number, y: number, cardData?: CardData) => {
+            if (!whiteboard || !whiteboard._id) {
+                console.error("Whiteboard is not loaded or ID is undefined");
+                return;
             }
-            setContextMenu(null);
-        } catch (err: any) {
-            console.error('Failed to add card:', err);
-            toast.error(err.message || 'Failed to add card');
-        }
-    };
+    
+            const position = {
+                x: x - window.scrollX,
+                y: y - window.scrollY
+            };
+    
+            const newCardData: Omit<CardData, '_id'> = {
+                cardTitle: cardData ? `${cardData.cardTitle} Copy` : '新卡片',
+                content: cardData ? cardData.content : '新內容',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                dueDate: cardData && cardData.dueDate ? new Date(cardData.dueDate) : new Date(),
+                tag: cardData ? cardData.tag : '',
+                foldOrNot: cardData ? cardData.foldOrNot : false,
+                position: position,
+                dimensions: cardData ? { ...cardData.dimensions } : { width: 300, height: 300 },
+                connections: cardData ? cardData.connections : [],
+                comments: cardData ? cardData.comments : [],
+            };
+    
+            try {
+                const createdCard = await createCard(newCardData);
+                console.log("Created Card:", createdCard);
+    
+                if (createdCard._id) {
+                    setCards(prevCards => [...prevCards, createdCard]);
+    
+                    const updatedCardIds = [...(whiteboard.cards || []).map(card => typeof card === 'string' ? card : card._id), createdCard._id];
+                    await updateWhiteboard(whiteboard._id, { cards: updatedCardIds });
+                }
+                setContextMenu(null);
+            } catch (err: any) {
+                console.error('Failed to add card:', err);
+                toast.error(err.message || 'Failed to add card');
+            }
+        },
+        [whiteboard, setCards, setContextMenu]
+    );
     const handleDeleteConnectionFromCard = (connectionId: string) => {
         setConnections((prevConnections) =>
             prevConnections.filter((connection) => connection.id !== connectionId)
@@ -266,6 +266,32 @@ const Whiteboard: React.FC = () => {
             }
         }
     };
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // 檢查是否按下 Ctrl+V 或 Cmd+V
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                e.preventDefault(); // 阻止默認行為
+                if (copiedCard) {
+                    const pastePosition = lastMousePosition || { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // 默認為螢幕中心
+                    addCard(pastePosition.x, pastePosition.y, copiedCard);
+                    //console.log('Card pasted at:', { x: centerX, y: centerY });
+                } else {
+                    console.warn('No card to paste');
+                }
+            }
+        };
+        const handleMouseDown = (e: MouseEvent) => {
+            setLastMousePosition({ x: e.clientX, y: e.clientY });
+        };
+    
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('mousedown', handleMouseDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('mousedown', handleMouseDown);
+        };
+    }, [copiedCard, addCard,lastMousePosition]);
+    
 
     const handleSelectCard = (cardId: string | null) => {
         if (cardId === null){
@@ -276,7 +302,6 @@ const Whiteboard: React.FC = () => {
         }
 
     };
-
     if (loading) {
         return <div className="p-5 text-center">Loading...</div>;
     }
@@ -285,6 +310,8 @@ const Whiteboard: React.FC = () => {
         return <div className="p-5 text-center text-red-500">{error}</div>;
     }
 
+
+    
     return (
         <div
             ref={whiteboardRef}
