@@ -2,8 +2,8 @@
 
 import { CardData } from '@/interfaces/Card/CardData';
 
-const API_BASE_URL = 'http://localhost:3000/api/cards'; // according to your backend API
 
+const API_BASE_URL = process.env.NODE_ENV === "production" ? "/api/cards" : "http://localhost:3000/api/cards";
 interface PatchCardUpdate {
     id: string;
     changes: Partial<CardData>;

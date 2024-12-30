@@ -25,14 +25,28 @@ require("./config/db");
 
 const app = express();
 
+const allowedOrigins =
+  NODE_ENV === "production"
+    ? ["https://happynote.online", "https://www.happynote.online"]
+    : ["http://localhost:5173"];
+
 // cors middleware to allow cross-origin requests
 app.use(
   cors({
-    origin: "http://localhost:5173", // frontend server port
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like Postman or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     methods: "GET,POST,PUT,DELETE,PATCH",
     credentials: true,
   })
 );
+
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 app.use(express.json());

@@ -4,8 +4,7 @@ import { UserData } from '../interfaces/User/UserData';
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
 import { CreateUserData } from '@/interfaces/User/CreateUserData';
 
-const API_BASE_URL = 'http://localhost:3000/api/users'; // according to your backend API
-
+const API_BASE_URL = process.env.NODE_ENV === "production" ? "/api/user" : "http://localhost:3000/api/user";
 
 
 // GET /api/users - Get all users

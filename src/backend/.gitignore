@@ -1,3 +1,6 @@
+# dotenv environment variables file
+ecosystem.config.js
+
 # Logs
 logs
 *.log
@@ -71,6 +74,8 @@ web_modules/
 
 # Yarn Integrity file
 .yarn-integrity
+
+
 
 # dotenv environment variable files
 .env

@@ -4,8 +4,8 @@ import { WhiteboardData } from '../interfaces/Whiteboard/WhiteboardData';
 import { WhiteboardUpdateData } from '@/interfaces/Whiteboard/WhiteboardUpdateData';
 import { CreateWhiteboardData } from '@/interfaces/Whiteboard/CreateWhiteboardData';
 
-const API_BASE_URL = 'http://localhost:3000/api/whiteboards'; // according to your backend API
 
+const API_BASE_URL = process.env.NODE_ENV === "production" ? "/api/whiteboards" : "http://localhost:3000/api/whiteboards";
 
 
 // GET /api/whiteboards - Get all whiteboards or filter by userId

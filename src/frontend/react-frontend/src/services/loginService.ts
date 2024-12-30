@@ -2,8 +2,7 @@
 
 import { UserData } from '../interfaces/User/UserData';
 
-const API_BASE_URL = 'http://localhost:3000/api/auth'; // according to your backend API
-
+const API_BASE_URL = process.env.NODE_ENV === "production" ? "/api/auth" : "http://localhost:3000/api/auth";
 
 export const authenticateUser = async (
     userName: string | null, 

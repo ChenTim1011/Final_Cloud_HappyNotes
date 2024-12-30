@@ -10,7 +10,7 @@
     "app:prod": "cd backend && pm2 start app.js --name app --env production",
     "frontend": "cd frontend/react-frontend && npm run dev",
     "stop-frontend": "kill-port 3000",
-    "stop-backend": "cd backend && pm2 stop app && pm2 stop db",
+    "stop-backend": "cd backend && pm2 stop app ",
     "stop": "npm run stop-backend"
   },
   "devDependencies": {
