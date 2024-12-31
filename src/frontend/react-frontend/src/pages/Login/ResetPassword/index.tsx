@@ -8,6 +8,7 @@ import { updateUser, getUserByName} from '@/services/userService';
 import {sendVerificationCode, verifyCode} from '@/services/loginService';
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
+import bcrypt from 'bcryptjs';
 
 const ResetPassword: React.FC = () =>{
 
@@ -39,6 +40,17 @@ const ResetPassword: React.FC = () =>{
                         );
                         throw new Error(`${fieldName}只能包含中英文、數字，且不能為空`);
                     }
+                } else if (fieldName === "密碼") {
+                    // Check if password meets requirements
+                    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+                    if (input === null || !passwordRegex.test(input)) {
+                        toast.error(
+                            <div>
+                                {fieldName}必須包含大小寫英文、數字，且長度至少為8個字元
+                            </div>,
+                        );
+                        throw new Error(`${fieldName}必須包含大小寫英文、數字，且長度至少為8個字元`);
+                    }
                 }
                 console.log(input);
             };
@@ -67,7 +79,7 @@ const ResetPassword: React.FC = () =>{
             validateInput(userPasswordAgain, "密碼");
             validateInput(inputEmail, "email");
 
-            //Avoid incosistent password
+            // Avoid incosistent password
             if(userPassword !== userPasswordAgain){
                 toast.error(`請確保兩次輸入的密碼相同。`);
                 throw new Error(`請確保兩次輸入的密碼相同。`);
@@ -111,10 +123,13 @@ const ResetPassword: React.FC = () =>{
             const userPassword = userPasswordRef.current?.value || '';
             const inputEmail = emailRef.current?.value || currentUser!.email;
     
-            console.log(currentUser);
+            // Hash the password
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(userPassword, salt);
+            
             const updatedUser: UserUpdateData = {
                 userName,
-                userPassword,
+                userPassword: hashedPassword,
                 email: inputEmail,
                 isLoggedin: false,
             };

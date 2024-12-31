@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@types/quill": "^2.0.14",
+    "bcryptjs": "^2.4.3",
     "debounce": "^2.2.0",
     "FinalCloud": "file:../..",
     "lodash": "^4.17.21",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
+    "@types/bcryptjs": "^2.4.6",
     "@types/lodash": "^4.17.13",
     "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^22.8.7",

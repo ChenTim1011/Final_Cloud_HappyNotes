@@ -5,6 +5,7 @@ import { createUser, getUserByName } from '@/services/userService';
 import { CreateUserData } from '@/interfaces/User/CreateUserData';
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
+import bcrypt from 'bcryptjs';
 
 const Register: React.FC = () => {
     const userNameRef = useRef<HTMLInputElement | null>(null);
@@ -30,6 +31,17 @@ const Register: React.FC = () => {
                         );
                         throw new Error(`${fieldName}只能包含中英文、數字，且不能為空`);
                     }
+                } else if (fieldName === "密碼") {
+                    // Check if password meets requirements
+                    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+                    if (input === null || !passwordRegex.test(input)) {
+                        toast.error(
+                            <div>
+                                {fieldName}必須包含大小寫英文、數字，且長度至少為8個字元
+                            </div>,
+                        );
+                        throw new Error(`${fieldName}必須包含大小寫英文、數字，且長度至少為8個字元`);
+                    }
                 }
                 console.log(input);
             };
@@ -53,16 +65,20 @@ const Register: React.FC = () => {
                 throw new Error(`此用戶已存在`);
             }
 
-            //Avoid incosistent password
+            // Avoid incosistent password
             if(userPassword !== userPasswordAgain){
                 toast.error(`請確保兩次輸入的密碼相同。`);
                 throw new Error(`請確保兩次輸入的密碼相同。`);
             }
             
+            // Hash the password
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(userPassword!, salt);
+
             // If all validation passes, create new user
             const newuser: CreateUserData = {
                 userName: userName,
-                userPassword: userPassword,
+                userPassword: hashedPassword,
                 email: email,
             };
 

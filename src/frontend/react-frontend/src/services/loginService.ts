@@ -8,7 +8,7 @@ const API_BASE_URL = 'http://localhost:3000/api/auth'; // according to your back
 export const authenticateUser = async (
     userName: string | null, 
     password: string | null
-): Promise<UserData>  => {
+): Promise<[UserData, string, string]>  => {
     const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: {
@@ -25,6 +25,26 @@ export const authenticateUser = async (
     // console.log("User NAME:", data.userName); // For debugging purposes
     return data;
 }
+
+// POST /api/auth/refresh - Refresh the access token using the provided refresh token
+export const refreshAccessToken = async (
+    refreshToken: string
+): Promise< { accessToken: string }>  => {
+    const response = await fetch(`${API_BASE_URL}/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to refresh access token");
+    }
+
+    const data = await response.json();
+    return data; // { accessToken: string }
+};
 
 // POST /api/auth/send-verification-code - Send a verification code to the user's email
 export const sendVerificationCode = async (
