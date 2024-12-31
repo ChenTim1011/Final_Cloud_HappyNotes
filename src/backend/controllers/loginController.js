@@ -84,8 +84,6 @@ const GEN_TOKEN = async (req, res) => {
         // Authentication successful, generate access token and refresh token
         const accessToken = generateAccessToken(userName);
         const refreshToken = generateRefreshToken(userName);
-        // const accessToken = "generateAccessToken(userName)";
-        // const refreshToken = "generateRefreshToken(userName)";
 
         console.log(accessToken, "\n" ,refreshToken);
         // Authentication successful, return user data
@@ -123,7 +121,6 @@ const REFRESH_TOKEN = async (req, res) => {
     }
 };
 
-// app.post('/api/auth/validate-token', validateToken);
 // /api/auth/validate-token
 const VALIDATE_TOKEN = (req, res) => {
     const authHeader = req.headers.authorization;
@@ -145,19 +142,6 @@ const VALIDATE_TOKEN = (req, res) => {
     } catch (error) {
         res.status(403).json({ error: 'Invalid or expired token' });
     }
-};
-
-// Middleware for protected routes
-const AuthMiddleware = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the "Authorization" header
-
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) return res.status(403).json({ error: 'Invalid token' });
-        req.user = decoded; // Attach decoded userName to the request object
-        next(); // Proceed to the next middleware or route handler
-    });
 };
 
 // /api/auth/send-verification-code
@@ -207,7 +191,6 @@ const SEND_VERIFICATION_CODE = async (req, res) => {
     }
 };
 
-
 // /api/auth/verify-code
 // API to verify the verification code
 const VERIFY_CODE = async (req, res) => {
@@ -223,6 +206,19 @@ const VERIFY_CODE = async (req, res) => {
     } else {
         res.status(400).json({ message: '驗證碼錯誤或已過期' });
     }
+};
+
+// Middleware for protected routes
+const AuthMiddleware = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the "Authorization" header
+
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(403).json({ error: 'Invalid token' });
+        req.user = decoded; // Attach decoded userName to the request object
+        next(); // Proceed to the next middleware or route handler
+    });
 };
 
 module.exports = { GEN_TOKEN, REFRESH_TOKEN, VALIDATE_TOKEN, SEND_VERIFICATION_CODE, VERIFY_CODE, AuthMiddleware };

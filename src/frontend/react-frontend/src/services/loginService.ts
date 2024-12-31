@@ -46,6 +46,31 @@ export const refreshAccessToken = async (
     return data; // { accessToken: string }
 };
 
+// POST /api/auth/validate-token - Validate token and match it with the provided userName
+export const validateToken = async (
+    token: string, 
+    userName: string | undefined
+): Promise<boolean> => {
+    if (!token || !userName) {
+        throw new Error("Token and userName are required");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/validate-token`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userName }),
+    });
+
+    if (!response.ok) {
+        return false; // Token validation failed
+    }
+
+    return true; // Token validation succeeded
+};
+
 // POST /api/auth/send-verification-code - Send a verification code to the user's email
 export const sendVerificationCode = async (
     userName: string | null,
