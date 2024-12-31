@@ -153,12 +153,16 @@ const Map: React.FC = () => {
         }
     };
 
-    // Handle right-click to show context menu
-    const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setContextMenu({ x: e.clientX, y: e.clientY });
-        setIsAdding(false); // Reset adding form if context menu is reopened
-    };
+  // Handle right-click to show context menu
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Prevent context menu from appearing near the top-left corner (where the toggle button is)
+    const padding = 50; // Adjust as needed
+    const x = e.clientX < padding ? padding : e.clientX;
+    const y = e.clientY < padding ? padding : e.clientY;
+    setContextMenu({ x, y });
+    setIsAdding(false); // Reset adding form if context menu is reopened
+  };
 
     // Handle click outside the context menu to close it
     useEffect(() => {
@@ -216,152 +220,152 @@ const Map: React.FC = () => {
         return <div className="p-5 text-center text-red-500">{error}</div>;
     }
 
-    return (
-        <div className="relative w-full h-screen bg-[#F7F1F0]" onContextMenu={handleContextMenu}>
-            {/* Render the sidebar and the main content */}
-            <div className="flex">
-                <div className="fixed top-[-20px] left-0 h-screen w-64 z-50">
-                    <Sidebar />
-                </div>
+  return (
+    <div className="relative w-full h-screen bg-[#F7F1F0]" onContextMenu={handleContextMenu}>
+      {/* Render the sidebar */}
+      <Sidebar />
 
-                <div className="flex-grow ml-5">
-                    <h2 className="text-4xl font-serif font-extrabold text-center text-[#262220] py-5 tracking-wide">
-                        地圖
-                    </h2>
-                </div>
-            </div>
+      {/* Main content without margin, whiteboard occupies full screen */}
+      <div className="absolute top-0 left-0 w-full h-full">
+        <h2 className="text-4xl font-serif font-extrabold text-center text-[#262220] py-5 tracking-wide">
+          地圖
+        </h2>
 
-            {/* Render all the whiteboards */}
-            <div
-                className="flex-grow overflow-auto bg-[#C3A6A0]"
-                style={{ width: '2000px', height: '2000px' }}
-                ref={whiteboardRef}
+        {/* Whiteboard container */}
+        <div
+          className="overflow-auto bg-[#C3A6A0] relative w-full h-full"
+          style={{ width: '2000px', height: '2000px' }}
+          ref={whiteboardRef}
+        >
+          {whiteboards.map((whiteboard) => (
+            <Rnd
+              key={whiteboard._id}
+              size={{ width: whiteboard.dimensions.width, height: whiteboard.dimensions.height }}
+              position={{ x: whiteboard.position.x, y: whiteboard.position.y }}
+              onDragStart={() => { setDraggingWhiteboardId(whiteboard._id); }}
+              onDrag={() => { /* Optional: Additional logic during drag */ }}
+              onDragStop={(e, d) => { 
+                handleDragStop(whiteboard._id, d); 
+              }}
+              bounds="parent"
+              dragHandleClassName="drag-handle"
+              enableResizing={false} 
             >
-                {whiteboards.map((whiteboard) => (
-                    <Rnd
-                        key={whiteboard._id}
-                        size={{ width: whiteboard.dimensions.width, height: whiteboard.dimensions.height }}
-                        position={{ x: whiteboard.position.x, y: whiteboard.position.y }}
-                        onDragStart={() => { setDraggingWhiteboardId(whiteboard._id); }}
-                        onDrag={() => { /* Optional: Additional logic during drag */ }}
-                        onDragStop={(e, d) => { 
-                            handleDragStop(whiteboard._id, d); 
-                        }}
-                        bounds="parent"
-                        dragHandleClassName="drag-handle"
-                        enableResizing={false} 
-                    >
-                        <div
-                            className="relative bg-white border border-[#C3A6A0] shadow-xl rounded-2xl p-6 cursor-pointer transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
-                            onClick={() => {
-                                if (!draggingWhiteboardId) {
-                                    navigate(`/whiteboard/${whiteboard._id}`);
-                                }
-                            }}
-                        >
-                            {/* Delete Button */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (whiteboard._id) handleDeleteWhiteboard(whiteboard._id);
-                                }}
-                                className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg"
-                                title="Delete Whiteboard"
-                            >
-                                🗑️
-                            </button>
+              <div
+                className="relative bg-white border border-[#C3A6A0] shadow-xl rounded-2xl p-6 cursor-pointer transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
+                onClick={() => {
+                  if (!draggingWhiteboardId) {
+                    navigate(`/whiteboard/${whiteboard._id}`);
+                  }
+                }}
+              >
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (whiteboard._id) handleDeleteWhiteboard(whiteboard._id);
+                  }}
+                  className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg"
+                  title="Delete Whiteboard"
+                >
+                  🗑️
+                </button>
 
-                            {/* Whiteboard Title */}
-                            <h3 className="text-2xl font-serif font-bold text-[#262220] drag-handle">
-                                {whiteboard.whiteboardTitle}
-                            </h3>
+                {/* Whiteboard Title */}
+                <h3 className="text-2xl font-serif font-bold text-[#262220] drag-handle">
+                  {whiteboard.whiteboardTitle}
+                </h3>
 
-                            {/* Card Count */}
-                            <p className="text-lg text-[#A15C38] mt-3">
-                                卡片數量: {whiteboard.cards?.length || 0}
-                            </p>
-                        </div>
-                    </Rnd>
-                ))}
+                {/* Card Count */}
+                <p className="text-lg text-[#A15C38] mt-3">
+                  卡片數量: {whiteboard.cards?.length || 0}
+                </p>
+              </div>
+            </Rnd>
+          ))}
+        </div>
+      </div>
+
+      {/* Context Menu for Adding Whiteboard */}
+      {contextMenu && !isAdding && (
+        <div
+          className="absolute bg-white border border-[#C3A6A0] shadow-lg rounded-lg p-2"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+            zIndex: 800, // Lower z-index than the toggle button
+            transform: 'translate(-50%, -50%)', // Center the context menu
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setIsAdding(true)}
+            className="w-full text-left px-4 py-2 hover:bg-[#F0E6E0] rounded"
+          >
+            新增白板
+          </button>
+        </div>
+      )}
+
+      {/* Form to Add Whiteboard */}
+      {contextMenu && isAdding && (
+        <div
+          className="absolute bg-white border border-[#C3A6A0] shadow-lg rounded-lg p-6"
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
+            zIndex: 800, // Lower z-index than the toggle button
+            transform: 'translate(-50%, -50%)', // Center the form
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <form onSubmit={handleCreateWhiteboard} className="space-y-4">
+            <h3 className="text-xl font-semibold text-[#262220]">新增白板</h3>
+            <div>
+              <label className="block mb-2 text-sm font-medium text-[#262220]">
+                標題
+              </label>
+              <input
+                type="text"
+                value={newWhiteboardTitle}
+                onChange={(e) => setNewWhiteboardTitle(e.target.value)}
+                className="w-full px-4 py-2 border border-[#C3A6A0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
+                placeholder="輸入白板標題"
+                required
+              />
             </div>
 
-            {/* Context Menu for Adding Whiteboard */}
-            {contextMenu && !isAdding && (
-                <div
-                    className="absolute bg-white border border-[#C3A6A0] shadow-lg rounded-lg p-2 z-50"
-                    style={{
-                        top: contextMenu.y,
-                        left: contextMenu.x,
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <button
-                        onClick={() => setIsAdding(true)}
-                        className="w-full text-left px-4 py-2 hover:bg-[#F0E6E0] rounded"
-                    >
-                        新增白板
-                    </button>
-                </div>
-            )}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={newWhiteboardPrivate}
+                onChange={(e) => setNewWhiteboardPrivate(e.target.checked)}
+                id="private"
+                className="mr-2"
+              />
+              <label htmlFor="private" className="text-sm text-[#262220]">私人白板</label>
+            </div>
 
-            {/* Form to Add Whiteboard */}
-            {contextMenu && isAdding && (
-                <div
-                    className="absolute bg-white border border-[#C3A6A0] shadow-lg rounded-lg p-6 z-50"
-                    style={{
-                        top: contextMenu.y,
-                        left: contextMenu.x,
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <form onSubmit={handleCreateWhiteboard} className="space-y-4">
-                        <h3 className="text-xl font-semibold text-[#262220]">新增白板</h3>
-                        <div>
-                            <label className="block mb-2 text-sm font-medium text-[#262220]">
-                                標題
-                            </label>
-                            <input
-                                type="text"
-                                value={newWhiteboardTitle}
-                                onChange={(e) => setNewWhiteboardTitle(e.target.value)}
-                                className="w-full px-4 py-2 border border-[#C3A6A0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
-                                placeholder="輸入白板標題"
-                                required
-                            />
-                        </div>
-
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                checked={newWhiteboardPrivate}
-                                onChange={(e) => setNewWhiteboardPrivate(e.target.checked)}
-                                id="private"
-                                className="mr-2"
-                            />
-                            <label htmlFor="private" className="text-sm text-[#262220]">私人白板</label>
-                        </div>
-
-                        <div className="flex justify-end space-x-4">
-                            <button
-                                type="button"
-                                onClick={() => { setContextMenu(null); setIsAdding(false); }}
-                                className="px-4 py-2 bg-[#A15C38] text-white rounded-lg shadow-xl hover:shadow-2xl transition-transform duration-300 hover:scale-110"
-                            >
-                                取消
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-4 py-2 bg-[#A15C38] text-white rounded-lg shadow-xl hover:shadow-2xl transition-transform duration-300 hover:scale-110"
-                            >
-                                建立
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            )}
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={() => { setContextMenu(null); setIsAdding(false); }}
+                className="px-4 py-2 bg-[#A15C38] text-white rounded-lg shadow-xl hover:shadow-2xl transition-transform duration-300 hover:scale-110"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-[#A15C38] text-white rounded-lg shadow-xl hover:shadow-2xl transition-transform duration-300 hover:scale-110"
+              >
+                建立
+              </button>
+            </div>
+          </form>
         </div>
-    );
-
+      )}
+    </div>
+  );
 };
 
 export default Map;

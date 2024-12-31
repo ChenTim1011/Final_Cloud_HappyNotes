@@ -19,7 +19,7 @@ const Sidebar: React.FC = () => {
   const logout = async() => {
     if (!currentUser) return;
 
-    const updateduser: UserUpdateData = {
+    const updatedUser: UserUpdateData = {
       userName: currentUser.userName,
       userPassword: currentUser.userPassword,
       email: currentUser.email,
@@ -29,7 +29,7 @@ const Sidebar: React.FC = () => {
     
 
     try {
-      await updateUser(currentUser._id, updateduser);
+      await updateUser(currentUser._id, updatedUser);
       setCurrentUser(null);
       toast.success('登出成功！');
       navigate('/auth/login');
@@ -48,7 +48,8 @@ const Sidebar: React.FC = () => {
             type="button"
             title="Toggle Sidebar"
             onClick={() => navigate('/auth/login')}
-            className="p-2 absolute top-0 left-0 z-50 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition-colors duration-200"
+            className="p-2 absolute top-0 left-0 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition-colors duration-200"
+            style={{ zIndex: 1000 }} // Ensure the button is on top
           >
             <FaBars size={24} />
           </button>
@@ -60,25 +61,23 @@ const Sidebar: React.FC = () => {
   // Show the sidebar with user information and navigation options if the user is logged in
   return (
     <div>
-      {/* Sidebar container */}
-      <div className="relative">
-        {/* Sidebar toggle button */}
-        <button
-          type="button"
-          title="Toggle Sidebar"
-          onClick={toggleSidebar}
-          className="mt-5 p-3 absolute top-4 left-4 z-50 bg-[#A15C38] text-white rounded hover:bg-[#8B4C34] transition-colors duration-200"
-        >
-          <FaBars size={24} />
-        </button>
-      </div>
+      {/* Sidebar toggle button */}
+      <button
+        type="button"
+        title="Toggle Sidebar"
+        onClick={toggleSidebar}
+        className=" p-3 fixed top-4 left-4 bg-[#A15C38] text-white rounded hover:bg-[#8B4C34] transition-colors duration-200"
+        style={{ zIndex: 1000 }} // Higher z-index to stay above other elements
+      >
+        <FaBars size={24} />
+      </button>
 
       {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-full bg-[#F7F1F0] text-[#262220] transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ width: "300px", zIndex: 40 }}
+        style={{ width: "300px", zIndex: 900 }} // Lower z-index than the toggle button
       >
         <div className="p-6">
           <div className="flex flex-col space-y-6">
@@ -90,7 +89,7 @@ const Sidebar: React.FC = () => {
 
     
             <a
-              className="py-3 px-4 bg-[#A15C38] text-center text-white font-medium rounded hover:bg-[#8B4C34] transition-colors duration-200 shadow-md"
+              className="py-3 px-4 bg-[#A15C38] text-center text-white font-medium rounded hover:bg-[#8B4C34] transition-colors duration-200 shadow-md cursor-pointer"
               onClick={() => {
                 setIsOpen(false);
                 navigate(`/map/${currentUser.userName}`);
@@ -100,7 +99,7 @@ const Sidebar: React.FC = () => {
             </a>
 
             <a
-              className="py-3 px-4 bg-[#A15C38] text-center text-white font-medium rounded hover:bg-[#8B4C34] transition-colors duration-200 shadow-md"
+              className="py-3 px-4 bg-[#A15C38] text-center text-white font-medium rounded hover:bg-[#8B4C34] transition-colors duration-200 shadow-md cursor-pointer"
               onClick={() => {
                 setIsOpen(false);
                 navigate(`/management/${currentUser.userName}`);
@@ -111,7 +110,7 @@ const Sidebar: React.FC = () => {
   
             {/* Logout Button */}
             <a
-              className="py-3 px-4 bg-[#D64545] text-center text-white font-medium rounded hover:bg-[#B53838] transition-colors duration-200 shadow-md"
+              className="py-3 px-4 bg-[#D64545] text-center text-white font-medium rounded hover:bg-[#B53838] transition-colors duration-200 shadow-md cursor-pointer"
               onClick={async () => {
                 setIsOpen(false);
                 await logout();

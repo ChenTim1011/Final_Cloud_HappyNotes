@@ -33,24 +33,24 @@ const Whiteboard: React.FC = () => {
     // Fetch whiteboard and associated cards data when the component mounts or id changes
     useEffect(() => {
         const checkAccess = async () => {
-          if (userLoading) {
-            // User data is still loading, do nothing
-            return;
-          }
-          if (!currentUser) {
-            toast.error('請先登入');
-            navigate('/auth/login');
-            return;
-          }
-          if (!id) {
-            toast.error('找不到白板');
-            navigate(`/map/${currentUser.userName}`);
-            return;
-          }
+            if (userLoading) {
+                // User data is still loading, do nothing
+                return;
+            }
+            if (!currentUser) {
+                toast.error('請先登入');
+                navigate('/auth/login');
+                return;
+            }
+            if (!id) {
+                toast.error('找不到白板');
+                navigate(`/map/${currentUser.userName}`);
+                return;
+            }
         };
     
         checkAccess();
-      }, [currentUser, id, navigate, userLoading]);
+    }, [currentUser, id, navigate, userLoading]);
 
     // Fetch whiteboard data
     useEffect(() => {
@@ -246,91 +246,89 @@ const Whiteboard: React.FC = () => {
     }
 
     return (
-        <div className="relative w-full h-screen bg-[#F7F1F0] z-40">
-            {/* Render the sidebar and the main content */}
-            <div className="flex">
-                {/* Sidebar */}
-                <div className="fixed top-[-20px] left-0 h-screen w-64 z-50">
-                    <Sidebar />
-                </div>
-        
+        <div className="relative w-full h-screen bg-[#F7F1F0]" onContextMenu={(e) => handleRightClick(e)} role="application" tabIndex={0}>
+            {/* Render the sidebar */}
+            <Sidebar />
+
+            {/* Main content */}
+            <div className="flex flex-col h-full">
                 {/* Whiteboard Title Row */}
-                <div className="flex-grow ">
+                <div className="flex-grow">
                     <div className="bg-[#F7F1F0] py-4 shadow-md rounded-b-lg">
                         <h2 className="text-4xl font-serif font-extrabold text-center text-black tracking-wide">
                             {whiteboard ? whiteboard.whiteboardTitle : '載入中...'}
                         </h2>
                     </div>
                 </div>
-            </div>
-        
-            {/* Main Content */}
-            <div
-                className="flex-grow overflow-auto bg-[#C3A6A0] "
-                style={{ width: '10000px', height: '10000px' }}
-                ref={whiteboardRef}
-                onContextMenu={(e) => handleRightClick(e)}
-            >
-                {/* Card Rendering Section */}
-                {cards.map((card) => (
-                    <Card
-                        key={card._id}
-                        {...card}
-                        onDelete={deleteCardHandler}
-                        isSelected={card._id === selectedCardId}
-                        onSelect={handleSelectCard}
-                        onCopyCard={handleCopyCard}
-                        setCards={setCards}
-                        setFullscreenCardId={setSelectedCardId}
-                        onRightClick={(e) => handleRightClick(e, card._id)}
-                    />
-                ))}
-        
-                {/* Context Menu */}
-                {contextMenu && (
-                    <div
-                        className="absolute bg-white border border-[#C3A6A0] text-[#262220] p-3 rounded-lg z-100 shadow-lg cursor-pointer"
-                        style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {contextMenu.actions && contextMenu.actions.includes('add') && (
-                            <div
-                                className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
-                                onClick={() => addCard(contextMenu.x, contextMenu.y)}
-                            >
-                                新增卡片
-                            </div>
-                        )}
-                        {contextMenu.actions && contextMenu.actions.includes('paste') && (
-                            <div
-                                className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
-                                onClick={() => {
-                                    if (copiedCard) {
-                                        addCard(contextMenu.x, contextMenu.y, copiedCard);
-                                    }
-                                }}
-                            >
-                                貼上卡片
-                            </div>
-                        )}
-                        {selectedCardId && (
-                            <div
-                                className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
-                                onClick={() => {
-                                    const confirmDelete = window.confirm('你確定要刪除這張卡片嗎？');
-                                    if (confirmDelete) {
-                                        deleteCardHandler(selectedCardId);
-                                    }
-                                }}
-                            >
-                                刪除卡片
-                            </div>
-                        )}
-                    </div>
-                )}
+
+                {/* Whiteboard Content */}
+                <div
+                    className="overflow-auto bg-[#C3A6A0] relative"
+                    style={{ width: '5000px', height: '5000px' }}
+                    ref={whiteboardRef}
+                    onContextMenu={(e) => handleRightClick(e)}
+                >
+                    {/* Card Rendering Section */}
+                    {cards.map((card) => (
+                        <Card
+                            key={card._id}
+                            {...card}
+                            onDelete={deleteCardHandler}
+                            isSelected={card._id === selectedCardId}
+                            onSelect={handleSelectCard}
+                            onCopyCard={handleCopyCard}
+                            setCards={setCards}
+                            setFullscreenCardId={setSelectedCardId}
+                            onRightClick={(e) => handleRightClick(e, card._id)}
+                        />
+                    ))}
+
+                    {/* Context Menu */}
+                    {contextMenu && (
+                        <div
+                            className="absolute bg-white border border-[#C3A6A0] text-[#262220] p-3 rounded-lg shadow-lg cursor-pointer"
+                            style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px`, zIndex: 800 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {contextMenu.actions && contextMenu.actions.includes('add') && (
+                                <div
+                                    className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
+                                    onClick={() => addCard(contextMenu.x, contextMenu.y)}
+                                >
+                                    新增卡片
+                                </div>
+                            )}
+                            {contextMenu.actions && contextMenu.actions.includes('paste') && (
+                                <div
+                                    className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
+                                    onClick={() => {
+                                        if (copiedCard) {
+                                            addCard(contextMenu.x, contextMenu.y, copiedCard);
+                                        }
+                                    }}
+                                >
+                                    貼上卡片
+                                </div>
+                            )}
+                            {selectedCardId && (
+                                <div
+                                    className="py-2 px-4 hover:bg-[#F0E6E0] rounded"
+                                    onClick={() => {
+                                        const confirmDelete = window.confirm('你確定要刪除這張卡片嗎？');
+                                        if (confirmDelete) {
+                                            deleteCardHandler(selectedCardId);
+                                        }
+                                    }}
+                                >
+                                    刪除卡片
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
-      );
+    );
 };
 
 export default Whiteboard;
