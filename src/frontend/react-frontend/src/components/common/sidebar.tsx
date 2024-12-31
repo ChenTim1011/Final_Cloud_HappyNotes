@@ -31,6 +31,8 @@ const Sidebar: React.FC<SidebarProps> = ({users}) => {
 
     try {
         await updateUser(currentUser._id,updateduser);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
     } catch (err: any) {
         console.error('Failed to log out:', err);
         alert(err.message || 'Failed to log out');

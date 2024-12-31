@@ -8,6 +8,7 @@ import Whiteboard from '@/pages/Whiteboard';
 import Login from '@/pages/Login';
 import Register from '@/pages/Login/Register';
 import ResetPassword from '@/pages/Login/ResetPassword';
+import ProtectedRoute from './ProtectedRoute';
 
 // AppRoutes component defines the routing configuration for the application
 const AppRoutes: React.FC = () => {
@@ -20,7 +21,14 @@ const AppRoutes: React.FC = () => {
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />
-        <Route path="/map/:userName" element={<Map />} />
+        <Route
+            path="/map/:userName"
+            element={
+                <ProtectedRoute>
+                    <Map />
+                </ProtectedRoute>
+            }
+        />;
         <Route path="/whiteboard/:id" element={<Whiteboard />} />
       </Routes>
     </Router>
