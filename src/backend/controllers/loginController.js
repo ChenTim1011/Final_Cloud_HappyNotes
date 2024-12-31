@@ -50,17 +50,17 @@ const checkAndGenerateEnv = () => {
 };
 
 // Generate short-lived Access Token
-const generateAccessToken = (userId) => {
+const generateAccessToken = (userName) => {
     // Run the check and generate function
     checkAndGenerateEnv();
-    return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    return jwt.sign({ userName }, process.env.JWT_SECRET, { expiresIn: '15m' });
 };
 
 // Generate long-lived Refresh Token
-const generateRefreshToken = (userId) => {
+const generateRefreshToken = (userName) => {
     // Run the check and generate function
     checkAndGenerateEnv();
-    return jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    return jwt.sign({ userName }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 };
 
 // /api/auth/login endpoint
@@ -68,50 +68,74 @@ const GEN_TOKEN = async (req, res) => {
     const { userName, password } = req.body;
 
     // Authenticate user (assuming user is found in the database)
-    const user = await User.findOne({ userName });
-    if (!user || (password !== user.userPassword)) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+    try {
+        // Find user in the database
+        const user = await User.findOne({ userName });
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Compare the password with the hashed password in the database
+        const isMatch = await bcrypt.compare(password, user.userPassword);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Authentication successful, generate access token and refresh token
+        const accessToken = generateAccessToken(userName);
+        const refreshToken = generateRefreshToken(userName);
+        // const accessToken = "generateAccessToken(userName)";
+        // const refreshToken = "generateRefreshToken(userName)";
+
+        console.log(accessToken, "\n" ,refreshToken);
+        // Authentication successful, return user data
+        return res.json([user, accessToken, refreshToken]);
+    } catch (error) {
+        return res.status(500).json({ error: 'Error during authentication' });
     }
 
-    // const accessToken = generateAccessToken(user._id);
-    // const refreshToken = generateRefreshToken(user._id);
-
-    // // Store the Refresh Token in an HttpOnly cookie
-    // res.cookie('refreshToken', refreshToken, {
-    //     httpOnly: true, // Prevent client-side JavaScript access
-    //     secure: process.env.NODE_ENV === 'production', // Transmit only over HTTPS in production
-    //     sameSite: 'Strict', // Prevent CSRF attacks
-    //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
-    // });
-
-    // res.json({ accessToken });
-    return res.json(user);
 };
 
 // /api/auth/refresh endpoint
 const REFRESH_TOKEN = async (req, res) => {
-    const refreshToken = req.cookies.refreshToken; // Retrieve from HttpOnly cookie
-
-    if (!refreshToken) return res.status(401).json({ error: 'Unauthorized' });
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+        return res.status(400).json({ error: 'Refresh token is required' });
+    }
 
     try {
+        // Verify the refresh token
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
-        // Validate the Refresh Token (e.g., check if it exists in the database)
-        const user = await User.findById(decoded.userId);
-        if (!user || user.refreshToken !== refreshToken) {
-            return res.status(403).json({ error: 'Invalid refresh token' });
+        // Check if the user exists
+        const user = await User.findOne({ userName: decoded.userName });
+        if (!user) {
+            return res.status(401).json({ error: 'User not found' });
         }
 
-        const newAccessToken = generateAccessToken(user._id);
-        res.json({ accessToken: newAccessToken });
-    } catch (err) {
-        res.status(403).json({ error: 'Invalid refresh token' });
+        // Generate a new access token
+        const accessToken = generateAccessToken(user.userName);
+
+        return res.json({ accessToken });
+    } catch (error) {
+        return res.status(403).json({ error: 'Invalid or expired refresh token' });
     }
 };
 
-// Store verification codes (can be replaced with Redis or other storage for better security)
-const verificationCodes  = {};
+
+// Middleware for protected routes
+const AuthMiddleware = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the "Authorization" header
+
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(403).json({ error: 'Invalid token' });
+        req.user = decoded; // Attach decoded userName to the request object
+        next(); // Proceed to the next middleware or route handler
+    });
+};
 
 // /api/auth/send-verification-code
 // API to send verification code
@@ -148,7 +172,6 @@ const SEND_VERIFICATION_CODE = async (req, res) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        verificationCodes[userName] = verificationCode; // Save the verification code
 
         // Send response to client with the verification code
         res.status(200).json({
@@ -177,19 +200,6 @@ const VERIFY_CODE = async (req, res) => {
     } else {
         res.status(400).json({ message: '驗證碼錯誤或已過期' });
     }
-};
-
-// Middleware for protected routes
-const AuthMiddleware = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the "Authorization" header
-
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) return res.status(403).json({ error: 'Invalid token' });
-        req.user = decoded; // Attach decoded userId to the request object
-        next(); // Proceed to the next middleware or route handler
-    });
 };
 
 module.exports = { GEN_TOKEN, REFRESH_TOKEN, SEND_VERIFICATION_CODE, VERIFY_CODE, AuthMiddleware };
