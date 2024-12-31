@@ -21,6 +21,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.1",
     "FinalCloud": "file:..",
+    "helmet": "^8.0.0",
     "ioredis": "^5.4.1",
     "jsdom": "^25.0.1",
     "jsonwebtoken": "^9.0.2",

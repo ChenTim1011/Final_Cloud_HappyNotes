@@ -10,13 +10,12 @@ const window = new JSDOM("").window;
 const DOMPurify = createDOMPurify(window);
 
 /**
- * Clean up the HTML string to prevent XSS attacks
+ * Sanitize HTML to prevent XSS attacks
  * @param {string} dirty - original HTML string
- * @returns {string} - cleaned HTML string
+ * @returns {string} - sanitized HTML string
  */
 const sanitizeHTML = (dirty) => {
   return DOMPurify.sanitize(dirty, {
-    // Add your custom configurations here
     ALLOWED_TAGS: [
       "b",
       "i",
@@ -37,8 +36,14 @@ const sanitizeHTML = (dirty) => {
       "h4",
       "h5",
       "h6",
-    ],
-    ALLOWED_ATTR: ["href", "title", "target", "rel", "src", "alt", "style"],
+    ], // Only allow essential tags
+    ALLOWED_ATTR: ["href", "title", "target", "rel", "src", "alt", "style"], // Allow only necessary attributes
+    FORBID_ATTR: ["onerror", "onclick", "onload"], // Explicitly forbid event handlers
+    FORBID_TAGS: ["script", "iframe", "object", "embed", "applet"], // Forbid dangerous tags
+    ALLOWED_URI_REGEXP:
+      /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i, // Restrict URI schemes
+    WHOLE_DOCUMENT: false, // Only sanitize fragments, not entire documents
+    RETURN_DOM_FRAGMENT: false, // Return sanitized string instead of DOM
   });
 };
 

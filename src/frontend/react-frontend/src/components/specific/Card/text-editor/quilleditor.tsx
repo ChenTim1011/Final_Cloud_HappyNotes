@@ -15,7 +15,6 @@ const formats = [
   "bullet",
   "link",
   "image",
-  "code-block",
 ];
 
 // Define the toolbar module
@@ -24,7 +23,7 @@ const modules = {
     [{ header: [1, 2, false] }], // Header options
     ["bold", "italic", "underline", "strike"], // Text styles
     [{ list: "ordered" }, { list: "bullet" }], // Ordered and unordered lists
-    ["link", "image", "code-block"], // Insert links, images, and code blocks
+    ["link", "image"], // Insert links, images
   ],
 };
 

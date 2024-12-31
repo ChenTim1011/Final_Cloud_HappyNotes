@@ -56,7 +56,17 @@ DB_HOST=localhost
 DB_PORT=27017
 DB_NAME=local_db
 # DB_SSL_CA is not required for local development
+
 ```
+
+For example
+```dotenv
+export NODE_ENV=development
+export DB_HOST=127.0.0.1
+export DB_PORT=27017
+export DB_NAME=whiteboards
+```
+
 
 #### 3.3. Populate the `.env.production` File (Production Environment)
 
