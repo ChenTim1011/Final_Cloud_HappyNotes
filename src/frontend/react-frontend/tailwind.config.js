@@ -63,7 +63,7 @@ export default {
       },
       backgroundImage: {
         "radial-gradient":
-          "radial-gradient(circle, #F7F1F0 30%, #C3A6A0 50%, #A15C38 95%)",
+          "radial-gradient(circle, #F7F1F0 30%, #C3A6A0 50%, #A15C38 105%)",
       },
       animation: {
         fadeIn: "fadeIn 2s ease-in-out",

@@ -14,6 +14,7 @@ export const authenticateUser = async (
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ userName, password }),
+        credentials: "include",
     });
 
     if (!response.ok) {

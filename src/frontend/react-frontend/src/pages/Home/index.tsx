@@ -13,8 +13,10 @@ const Home: React.FC = () => {
     <div
       className="relative flex flex-col items-center justify-start min-h-screen bg-radial-gradient overflow-auto"
     >
-      <div className="mt-32 text-center">
+      <div className="mt-64 text-center">
         
+
+
         <h1 className="text-[15vh] text-[#262220] font-serif">
           HappyNote
         </h1>

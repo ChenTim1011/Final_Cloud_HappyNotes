@@ -4,7 +4,7 @@ import { UserData } from '../interfaces/User/UserData';
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
 import { CreateUserData } from '@/interfaces/User/CreateUserData';
 
-const API_BASE_URL = process.env.NODE_ENV === "production" ? "/api/user" : "http://localhost:3000/api/user";
+const API_BASE_URL = process.env.NODE_ENV === "production" ? "/api/users" : "http://localhost:3000/api/users";
 
 
 // GET /api/users - Get all users
@@ -14,6 +14,7 @@ export const getAllUsers = async (): Promise<UserData[]> => {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -31,6 +32,7 @@ export const getUserById = async (id: string): Promise<UserData> => {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -53,6 +55,7 @@ export const getUserByName = async (userName: string | null | undefined): Promis
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -73,6 +76,7 @@ export const createUser = async (
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(user),
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -95,6 +99,7 @@ export const updateUser = async (
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData),
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -113,6 +118,7 @@ export const deleteUserById = async (id: string): Promise<void> => {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {

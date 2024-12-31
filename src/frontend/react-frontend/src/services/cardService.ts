@@ -25,6 +25,7 @@ export const getAllCards = async (): Promise<CardData[]> => {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -46,6 +47,7 @@ export const patchCard = async (id: string, changes: Partial<CardData>): Promise
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ changes }),
+            credentials: "include",
         });
 
         if (!response.ok) {
@@ -68,6 +70,7 @@ export const createCard = async (card: Omit<CardData, '_id'>): Promise<CardData>
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(card),
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -86,6 +89,7 @@ export const createCardWithWhiteboard = async (whiteboardId: string, card: Omit<
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ whiteboardId, ...card }),
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -110,6 +114,7 @@ export const deleteCard = async (id: string): Promise<void> => {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: "include",
         });
 
         if (!response.ok) {
@@ -129,6 +134,7 @@ export const patchCardsBatch = async (updates: PatchCardUpdate[]): Promise<void>
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ updates }),
+            credentials: "include",
         });
 
         if (!response.ok) {

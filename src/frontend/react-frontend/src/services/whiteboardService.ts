@@ -20,6 +20,7 @@ export const getAllWhiteboards = async (userId?: string): Promise<WhiteboardData
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -37,6 +38,7 @@ export const getWhiteboardById = async (id: string): Promise<WhiteboardData> => 
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -57,6 +59,7 @@ export const createWhiteboard = async (
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(whiteboard),
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -79,6 +82,7 @@ export const updateWhiteboard = async (
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData),
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -97,6 +101,7 @@ export const deleteWhiteboardById = async (id: string): Promise<void> => {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {

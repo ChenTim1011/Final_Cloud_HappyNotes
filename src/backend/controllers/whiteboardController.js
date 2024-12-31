@@ -9,7 +9,7 @@ const GET = async (req, res) => {
 
     if (userId) {
       // Only get whiteboards that belong to the user
-      whiteboards = await Whiteboard.find({ userId }).populate("cards"); // 若需要同時抓卡片內容，就 populate
+      whiteboards = await Whiteboard.find({ userId }).populate("cards"); // Populate the cards associated with the whiteboard
     }
     return res.json(whiteboards);
   } catch (error) {
