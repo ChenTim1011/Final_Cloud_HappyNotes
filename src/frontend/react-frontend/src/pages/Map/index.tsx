@@ -1,6 +1,6 @@
 // src/pages/Map.tsx - Updated to include a context menu with "新增白板" option
 
-import React, { useState, useEffect, FormEvent,useRef } from 'react';
+import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
 import { WhiteboardUpdateData } from '@/interfaces/Whiteboard/WhiteboardUpdateData';
@@ -11,6 +11,11 @@ import { getUserByName, updateUser } from '@/services/userService';
 import { createWhiteboard, deleteWhiteboardById, updateWhiteboard } from '@/services/whiteboardService';
 import Sidebar from '@/components/common/sidebar';
 import { Rnd } from 'react-rnd';
+
+interface AlignmentLine {
+  orientation: 'horizontal' | 'vertical';
+  position: number;
+}
 
 const Map: React.FC = () => {
     const navigate = useNavigate();
@@ -24,7 +29,10 @@ const Map: React.FC = () => {
     const [newWhiteboardTitle, setNewWhiteboardTitle] = useState<string>('');
     const [newWhiteboardPrivate, setNewWhiteboardPrivate] = useState<boolean>(false);
     const [draggingWhiteboardId, setDraggingWhiteboardId] = useState<string | null>(null); // Track which whiteboard is being dragged
+    const [alignmentLines, setAlignmentLines] = useState<AlignmentLine[]>([]); // State to hold alignment lines
+    const [zoomLevel, setZoomLevel] = useState<number>(1); // State for zoom level
     const whiteboardRef = useRef<HTMLDivElement>(null);
+
     // Fetch whiteboards data from the backend when the component mounts
     useEffect(() => {
         const fetchWhiteboardsData = async () => {
@@ -57,6 +65,7 @@ const Map: React.FC = () => {
         fetchWhiteboardsData();
     }, [userName]); 
 
+    // Handle creating a new whiteboard
     const handleCreateWhiteboard = async (e: FormEvent) => {
         e.preventDefault();
     
@@ -153,16 +162,16 @@ const Map: React.FC = () => {
         }
     };
 
-  // Handle right-click to show context menu
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // Prevent context menu from appearing near the top-left corner (where the toggle button is)
-    const padding = 50; // Adjust as needed
-    const x = e.clientX < padding ? padding : e.clientX;
-    const y = e.clientY < padding ? padding : e.clientY;
-    setContextMenu({ x, y });
-    setIsAdding(false); // Reset adding form if context menu is reopened
-  };
+    // Handle right-click to show context menu
+    const handleContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        // Prevent context menu from appearing near the top-left corner (where the toggle button is)
+        const padding = 50; // Adjust as needed
+        const x = e.clientX < padding ? padding : e.clientX;
+        const y = e.clientY < padding ? padding : e.clientY;
+        setContextMenu({ x, y });
+        setIsAdding(false); // Reset adding form if context menu is reopened
+    };
 
     // Handle click outside the context menu to close it
     useEffect(() => {
@@ -179,41 +188,111 @@ const Map: React.FC = () => {
         };
     }, [contextMenu]);
 
-    // Handle drag stop to update whiteboard position
-    const handleDragStop = async (id: string, d: { x: number; y: number }) => {
-        try {
-            // Find the whiteboard to update
-            const whiteboardIndex = whiteboards.findIndex(wb => wb._id === id);
-            if (whiteboardIndex === -1) return;
 
-            const updatedWhiteboards = [...whiteboards];
-            updatedWhiteboards[whiteboardIndex] = {
-                ...updatedWhiteboards[whiteboardIndex],
-                position: { x: d.x, y: d.y },
-                updatedAt: new Date(),
-            };
 
-            setWhiteboards(updatedWhiteboards);
+    const handleDrag = (currentWb: WhiteboardData, d: { x: number; y: number }) => {
+      const adjustedX = d.x / zoomLevel; 
+      const adjustedY = d.y / zoomLevel; 
+  
+      const newAlignmentLines: AlignmentLine[] = [];
+      const currentEdges = {
+          left: adjustedX,
+          right: adjustedX + currentWb.dimensions.width,
+          top: adjustedY,
+          bottom: adjustedY + currentWb.dimensions.height,
+          centerX: adjustedX + currentWb.dimensions.width / 2,
+          centerY: adjustedY + currentWb.dimensions.height / 2,
+      };
+  
+      whiteboards.forEach(wb => {
+          if (wb._id === currentWb._id) return;
+  
+          const edges = {
+              left: wb.position.x,
+              right: wb.position.x + wb.dimensions.width,
+              top: wb.position.y,
+              bottom: wb.position.y + wb.dimensions.height,
+              centerX: wb.position.x + wb.dimensions.width / 2,
+              centerY: wb.position.y + wb.dimensions.height / 2,
+          };
+  
+          const tolerance = 10; 
+  
+          if (Math.abs(currentEdges.left - edges.left) < tolerance) {
+              newAlignmentLines.push({ orientation: 'vertical', position: edges.left });
+          }
+          if (Math.abs(currentEdges.right - edges.right) < tolerance) {
+              newAlignmentLines.push({ orientation: 'vertical', position: edges.right });
+          }
+          if (Math.abs(currentEdges.centerX - edges.centerX) < tolerance) {
+              newAlignmentLines.push({ orientation: 'vertical', position: edges.centerX });
+          }
+  
+          if (Math.abs(currentEdges.top - edges.top) < tolerance) {
+              newAlignmentLines.push({ orientation: 'horizontal', position: edges.top });
+          }
+          if (Math.abs(currentEdges.bottom - edges.bottom) < tolerance) {
+              newAlignmentLines.push({ orientation: 'horizontal', position: edges.bottom });
+          }
+          if (Math.abs(currentEdges.centerY - edges.centerY) < tolerance) {
+              newAlignmentLines.push({ orientation: 'horizontal', position: edges.centerY });
+          }
+      });
+  
+      setAlignmentLines(newAlignmentLines);
+  };
+  
+  const handleDragStop = async (id: string, d: { x: number; y: number }) => {
+      const adjustedX = d.x / zoomLevel; 
+      const adjustedY = d.y / zoomLevel; 
+  
+      try {
+          const whiteboardIndex = whiteboards.findIndex(wb => wb._id === id);
+          if (whiteboardIndex === -1) return;
+  
+          const updatedWhiteboards = [...whiteboards];
+          updatedWhiteboards[whiteboardIndex] = {
+              ...updatedWhiteboards[whiteboardIndex],
+              position: { x: adjustedX, y: adjustedY },
+              updatedAt: new Date(),
+          };
+  
+          setWhiteboards(updatedWhiteboards);
+  
+          const updateData: Partial<WhiteboardUpdateData> = {
+              position: { x: adjustedX, y: adjustedY },
+              updatedAt: new Date(),
+          };
+  
+          await updateWhiteboard(id, updateData);
+      } catch (err: any) {
+          console.error('Failed to update whiteboard position:', err);
+          alert(err.message || 'Failed to update whiteboard position');
+      } finally {
+          setDraggingWhiteboardId(null);
+          setAlignmentLines([]);
+      }
+  };
 
-            // Update the whiteboard in the backend
-            const updateData: Partial<WhiteboardUpdateData> = {
-                position: { x: d.x, y: d.y },
-                updatedAt: new Date(),
-            };
-
-            await updateWhiteboard(id, updateData);
-        } catch (err: any) {
-            console.error('Failed to update whiteboard position:', err);
-            alert(err.message || 'Failed to update whiteboard position');
-        } finally {
-            // Reset dragging state
-            setDraggingWhiteboardId(null);
-        }
+    // Function to handle zoom in
+    const handleZoomIn = () => {
+        setZoomLevel(prev => Math.min(prev + 0.2, 1.25)); 
     };
+
+    // Function to handle zoom out
+    const handleZoomOut = () => {
+        setZoomLevel(prev => Math.max(prev - 0.2, 0.75)); 
+    };
+
+    // Function to handle reset zoom
+    const handleResetZoom = () => {
+        setZoomLevel(1);
+    };
+
 
     // Display a loading message while data is being fetched
     if (loading) {
-        return <div className="p-5 text-center">Loading...</div>;
+        return <div className="p-5 text-center">正在載入使用者的資料</div>;
     }
     // Display an error message if fetching data fails
     if (error) {
@@ -231,19 +310,67 @@ const Map: React.FC = () => {
           地圖
         </h2>
 
-        {/* Whiteboard container */}
+        {/* Zoom Controls fixed at bottom right */}
+        <div className="fixed bottom-10 right-10 z-10 flex flex-col space-y-2">
+          <button
+            onClick={handleZoomIn}
+            className="px-3 py-2 bg-[#A15C38] text-white rounded shadow hover:bg-[#8B4F2F] transition"
+            title="放大"
+          >
+            放大
+          </button>
+          <button
+            onClick={handleZoomOut}
+            className="px-3 py-2 bg-[#A15C38] text-white rounded shadow hover:bg-[#8B4F2F] transition"
+            title="縮小"
+          >
+            縮小
+          </button>
+          <button
+            onClick={handleResetZoom}
+            className="px-3 py-2 bg-[#A15C38] text-white rounded shadow hover:bg-[#8B4F2F] transition"
+            title="重置縮放"
+          >
+            重置
+          </button>
+        </div>
+
+        {/* Whiteboard container with zoom applied */}
         <div
           className="overflow-auto bg-[#C3A6A0] relative w-full h-full"
-          style={{ width: '2000px', height: '2000px' }}
+          style={{ 
+            width: '2000px', 
+            height: '2000px',
+            transform: `scale(${zoomLevel})`,
+            transformOrigin: '0 0',
+          }}
           ref={whiteboardRef}
         >
+          {/* Render alignment lines */}
+          {alignmentLines.map((line, index) => (
+            <div
+              key={index}
+              className={`absolute bg-blue-500`}
+              style={
+                line.orientation === 'vertical'
+                  ? { left: line.position, top: 0, bottom: 0, width: 1 }
+                  : { top: line.position, left: 0, right: 0, height: 1 }
+              }
+            />
+          ))}
+
           {whiteboards.map((whiteboard) => (
             <Rnd
               key={whiteboard._id}
               size={{ width: whiteboard.dimensions.width, height: whiteboard.dimensions.height }}
-              position={{ x: whiteboard.position.x, y: whiteboard.position.y }}
+              position={{
+                x: whiteboard.position.x * zoomLevel,
+                y: whiteboard.position.y * zoomLevel,
+              }}
               onDragStart={() => { setDraggingWhiteboardId(whiteboard._id); }}
-              onDrag={() => { /* Optional: Additional logic during drag */ }}
+              onDrag={(e, d) => { 
+                handleDrag(whiteboard, d); // Calculate alignment during dragging
+              }}
               onDragStop={(e, d) => { 
                 handleDragStop(whiteboard._id, d); 
               }}
@@ -335,16 +462,7 @@ const Map: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                checked={newWhiteboardPrivate}
-                onChange={(e) => setNewWhiteboardPrivate(e.target.checked)}
-                id="private"
-                className="mr-2"
-              />
-              <label htmlFor="private" className="text-sm text-[#262220]">私人白板</label>
-            </div>
+
 
             <div className="flex justify-end space-x-4">
               <button

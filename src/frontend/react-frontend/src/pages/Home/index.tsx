@@ -13,7 +13,7 @@ const Home: React.FC = () => {
     <div
       className="relative flex flex-col items-center justify-start min-h-screen bg-radial-gradient overflow-auto"
     >
-      <div className="mt-64 text-center">
+      <div className="mt-40 text-center">
         
 
 

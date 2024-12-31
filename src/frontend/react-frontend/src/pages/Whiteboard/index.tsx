@@ -111,7 +111,7 @@ const Whiteboard: React.FC = () => {
             tag: cardData ? cardData.tag : '',
             foldOrNot: cardData ? cardData.foldOrNot : false, 
             position: position,
-            dimensions: cardData ? { ...cardData.dimensions } : { width: 300, height: 300 },
+            dimensions: cardData ? { ...cardData.dimensions } : { width: 400, height: 500 },
             connection: cardData ? cardData.connection : [],
             comments: cardData ? cardData.comments : [],
         };
@@ -264,7 +264,7 @@ const Whiteboard: React.FC = () => {
                 {/* Whiteboard Content */}
                 <div
                     className="overflow-auto bg-[#C3A6A0] relative"
-                    style={{ width: '5000px', height: '5000px' }}
+                    style={{ minWidth: '10000px', minHeight: '10000px', width: '100%', height: '100%' }}
                     ref={whiteboardRef}
                     onContextMenu={(e) => handleRightClick(e)}
                 >
