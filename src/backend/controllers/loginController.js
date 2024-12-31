@@ -123,6 +123,29 @@ const REFRESH_TOKEN = async (req, res) => {
     }
 };
 
+// app.post('/api/auth/validate-token', validateToken);
+// /api/auth/validate-token
+const VALIDATE_TOKEN = (req, res) => {
+    const authHeader = req.headers.authorization;
+    const { userName } = req.body;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (decoded.userName !== userName) {
+            return res.status(403).json({ error: 'Forbidden: Access denied' });
+        }
+
+        res.status(200).json({ message: 'Token is valid' });
+    } catch (error) {
+        res.status(403).json({ error: 'Invalid or expired token' });
+    }
+};
 
 // Middleware for protected routes
 const AuthMiddleware = (req, res, next) => {
@@ -202,4 +225,4 @@ const VERIFY_CODE = async (req, res) => {
     }
 };
 
-module.exports = { GEN_TOKEN, REFRESH_TOKEN, SEND_VERIFICATION_CODE, VERIFY_CODE, AuthMiddleware };
+module.exports = { GEN_TOKEN, REFRESH_TOKEN, VALIDATE_TOKEN, SEND_VERIFICATION_CODE, VERIFY_CODE, AuthMiddleware };

@@ -26,9 +26,6 @@ const Map: React.FC = () => {
             try {
                 const users = await getUserByName(userName);
                 setUsers(users);
-                if(!users[0].isLoggedin){
-                    navigate(`../../auth/login`);
-                }
                 const data = users[0].whiteboards;
 
                 // Validate the data
