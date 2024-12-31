@@ -1,5 +1,9 @@
+// routes/ProtectedRoute/index.tsx - Ensures protected routes are accessible only to authenticated users, 
+// with token validation and refresh handling.
+
 import React, { useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
+import { validateToken, refreshAccessToken } from '../../services/loginService';
 
 const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -8,27 +12,36 @@ const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
 
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
-        if (!token) {
-            setIsLoading(false);
-            return;
-        }
+        const refreshToken = localStorage.getItem('refreshToken');
 
-        // 驗證 token 與路由參數是否匹配
-        fetch('http://localhost:3000/api/auth/validate-token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ userName }),
-        })
-            .then((res) => {
-                if (res.ok) return res.json();
-                throw new Error('Unauthorized');
-            })
-            .then(() => setIsAuthenticated(true))
-            .catch(() => setIsAuthenticated(false))
-            .finally(() => setIsLoading(false));
+        const validateOrRefreshToken = async () => {
+            try {
+                if (!token || !userName) {
+                    throw new Error("Missing token or userName");
+                }
+
+                // Validate the current token
+                const isValid = await validateToken(token, userName);
+                if (isValid) {
+                    setIsAuthenticated(true); // Token is valid
+                } else if (refreshToken) {
+                    // If token is invalid, try refreshing it
+                    const { accessToken: newAccessToken } = await refreshAccessToken(refreshToken);
+                    localStorage.setItem('accessToken', newAccessToken); // Update local storage
+                    const refreshedValid = await validateToken(newAccessToken, userName); // Revalidate
+                    setIsAuthenticated(refreshedValid); // Update authentication status
+                } else {
+                    throw new Error("Unable to validate or refresh token");
+                }
+            } catch (error) {
+                console.error("Authentication error:", error);
+                setIsAuthenticated(false); // Authentication failed
+            } finally {
+                setIsLoading(false); // Stop loading
+            }
+        };
+
+        validateOrRefreshToken();
     }, [userName]);
 
     if (isLoading) return <div>Loading...</div>;

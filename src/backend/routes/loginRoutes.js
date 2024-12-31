@@ -8,7 +8,7 @@ router.post('/login', loginController.GEN_TOKEN);
 // Refresh token route
 router.post('/refresh', loginController.REFRESH_TOKEN);
 
-// Refresh token route
+// Validate token route
 router.post('/validate-token', loginController.VALIDATE_TOKEN);
 
 // Send verification code
