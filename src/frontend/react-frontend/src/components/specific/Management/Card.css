@@ -43,6 +43,7 @@
     border-radius: 0.5rem; /* Maintain consistent rounded corners */
     overflow-y: auto; /* Enable vertical scrolling */
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); /* Add inner shadow */
+    scroll-behavior: smooth;
 }
 
 .ql-editor {
@@ -52,5 +53,8 @@
     word-wrap: break-word; /* Prevent text overflow */
     white-space: pre-wrap; /* Preserve spaces and line breaks */
     color: #262220; /* Deep brown font color */
-    max-height: 100%; /* Limit maximum height */
+    max-height: 100px;  /* Limit maximum height */
+    overflow-y: auto; 
+    padding-right: 8px; 
 }
+

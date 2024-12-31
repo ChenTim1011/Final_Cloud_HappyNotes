@@ -5,6 +5,7 @@ import { CardData } from '@/interfaces/Card/CardData';
 import Tag from '@/components/specific/Card/tag';
 import './Card.css';
 import { toast } from 'react-toastify';
+import DOMPurify from 'dompurify';
 
 interface CardProps extends CardData {
     onDelete: (cardId: string) => void;
@@ -53,7 +54,8 @@ const Card: React.FC<CardProps> = React.memo(({
         }
     };
 
-
+    // Sanitize the HTML content
+    const sanitizedContent = DOMPurify.sanitize(content);
 
     return (
         <div
@@ -68,14 +70,13 @@ const Card: React.FC<CardProps> = React.memo(({
                     <Tag currentTag={tag} onUpdateTag={() => { /* If we need to edit tag */ }} />
 
                     <div className="flex items-center space-x-2">
-
                         {/* Delete button */}
                         <button
                             onClick={handleDelete}
                             className="text-red-500 hover:text-red-700 focus:outline-none text-lg"
                             title="刪除卡片"
                         >
-                           🗑️
+                            🗑️
                         </button>
                     </div>
                 </div>
@@ -87,11 +88,9 @@ const Card: React.FC<CardProps> = React.memo(({
 
                 {/* Content Wrapper */}
                 <div
-                    className="ql-editor text-[#262220] font-normal mt-2 overflow-hidden text-ellipsis"
-                    style={{ maxHeight: '100px', overflow: 'hidden' }}
-                    dangerouslySetInnerHTML={{ __html: content }}
+                    className="ql-editor text-[#262220] font-normal mt-2 content-wrapper"
+                    dangerouslySetInnerHTML={{ __html: sanitizedContent }}
                 />
-
             </div>
         </div>
     );

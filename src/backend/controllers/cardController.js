@@ -1,5 +1,6 @@
 const Card = require("../models/Card");
 const Whiteboard = require("../models/Whiteboard");
+const sanitizeHTML = require("../utils/sanitize");
 // Get all cards
 const GET_CARDS = async (req, res) => {
   try {
@@ -26,9 +27,12 @@ const POST_CARD = async (req, res) => {
       dimensions,
       connection,
     } = req.body;
+
+    const sanitizedContent = sanitizeHTML(content);
+
     const newCard = new Card({
       cardTitle,
-      content,
+      content: sanitizedContent,
       dueDate,
       tag,
       foldOrNot: false,
@@ -71,10 +75,12 @@ const POST_CARD_WHITEBOARD_ID = async (req, res) => {
       return res.status(400).json({ error: "whiteboardId 是必填項目" });
     }
 
+    const sanitizedContent = sanitizeHTML(content);
+
     // Check if whiteboardId is valid
     const newCard = new Card({
       cardTitle,
-      content,
+      content: sanitizedContent,
       dueDate: dueDate || null,
       tag,
       foldOrNot: foldOrNot || false,
@@ -128,11 +134,14 @@ const PUT_CARD = async (req, res) => {
       dimensions,
       connection,
     } = req.body;
+
+    const sanitizedContent = sanitizeHTML(content);
+
     const updatedCard = await Card.findByIdAndUpdate(
       id,
       {
         cardTitle,
-        content,
+        content: sanitizedContent,
         dueDate,
         tag,
         foldOrNot,
@@ -203,7 +212,11 @@ const PATCH_CARD = async (req, res) => {
         changes[field] !== undefined &&
         changes[field] !== currentCard[field]
       ) {
-        updates[field] = changes[field];
+        if (field === "content") {
+          updates[field] = sanitizeHTML(changes[field]);
+        } else {
+          updates[field] = changes[field];
+        }
       }
     });
 
@@ -254,12 +267,20 @@ const PATCH_CARDS_BATCH = async (req, res) => {
   }
 
   try {
-    const bulkOperations = updates.map((update) => ({
-      updateOne: {
-        filter: { _id: update.id },
-        update: { $set: update.changes },
-      },
-    }));
+    const bulkOperations = updates.map((update) => {
+      const sanitizedChanges = { ...update.changes };
+
+      if (sanitizedChanges.content) {
+        sanitizedChanges.content = sanitizeHTML(sanitizedChanges.content);
+      }
+
+      return {
+        updateOne: {
+          filter: { _id: update.id },
+          update: { $set: sanitizedChanges },
+        },
+      };
+    });
 
     await Card.bulkWrite(bulkOperations);
     res.status(200).json({ message: "Batch update successful." });
@@ -268,7 +289,6 @@ const PATCH_CARDS_BATCH = async (req, res) => {
     res.status(500).json({ message: "Batch update failed.", error });
   }
 };
-
 module.exports = {
   GET_CARDS,
   POST_CARD,

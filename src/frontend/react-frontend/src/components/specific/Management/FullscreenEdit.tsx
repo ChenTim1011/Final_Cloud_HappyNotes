@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { CardData } from '@/interfaces/Card/CardData';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import QuillEditor from '@/components/specific/Card/text-editor/quilleditor';
+import DOMPurify from 'dompurify'; 
 
 interface FullscreenEditProps {
     card: CardData;
@@ -14,10 +14,14 @@ interface FullscreenEditProps {
 }
 
 const FullscreenEdit: React.FC<FullscreenEditProps> = ({ card, onChange, onSave, onCancel }) => {
+   
+    const handleContentChange = (content: string) => {
+        const sanitized = DOMPurify.sanitize(content);
+        onChange({ content: sanitized });
+    };
+
     return (
-        
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            
             <div className="w-full h-full p-6 bg-[#F7F1F0] border border-[#C3A6A0] rounded-none shadow-lg overflow-auto">
                 {/* Header with title and close button */}
                 <div className="flex justify-between items-center mb-6">
@@ -43,7 +47,7 @@ const FullscreenEdit: React.FC<FullscreenEditProps> = ({ card, onChange, onSave,
                 <div className="bg-white rounded-lg shadow-inner p-4 mt-4">
                     <QuillEditor
                         content={card.content}
-                        handleContentChange2={(content) => onChange({ content })}
+                        handleContentChange2={handleContentChange} 
                         readOnly={false}
                         theme="bubble"
                         onHeightChange={() => {}}

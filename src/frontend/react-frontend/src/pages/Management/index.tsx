@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Search, Clock, Calendar, Plus } from 'lucide-react'; 
 import { getAllWhiteboards } from '@/services/whiteboardService';
-import { getAllCards, deleteCard, createCard, updateCard } from '@/services/cardService';
+import { getAllCards, deleteCard, createCard, updateCard, createCardWithWhiteboard } from '@/services/cardService';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
 import { toast } from 'react-toastify';
 import {
@@ -30,7 +30,7 @@ import {
 import { getUserByName } from '@/services/userService'; 
 import { UserData } from '@/interfaces/User/UserData'; 
 import FullscreenEdit from '@/components/specific/Management/FullscreenEdit';
-import { createCardWithWhiteboard } from '@/services/cardService'; 
+import DOMPurify from 'dompurify'; 
 
 const ITEMS_PER_PAGE = 16; // Number of cards displayed per page
 const MAX_VISIBLE_PAGES = 5; // Maximum number of pages to display in pagination
@@ -287,7 +287,7 @@ const Management: React.FC = () => {
         try {
             const newCardData: Omit<CardData, '_id'> = {
                 cardTitle: `${card.cardTitle} (Copy)`,
-                content: card.content,
+                content: DOMPurify.sanitize(card.content), 
                 dueDate: card.dueDate,
                 tag: card.tag,
                 foldOrNot: card.foldOrNot,
@@ -339,11 +339,12 @@ const Management: React.FC = () => {
         }
     };
 
+    // 13. Handle adding a new card
     const handleAddCard = async () => {
         try {
             const newCardData: Omit<CardData, '_id'> = {
                 cardTitle: '新卡片',
-                content: '',
+                content: '', 
                 dueDate: undefined, 
                 tag: '',
                 foldOrNot: false,
@@ -368,30 +369,36 @@ const Management: React.FC = () => {
                 toast.error('請選擇一個白板');
                 throw new Error('沒有選擇的白板，且白板列表為空');
             }
-    
-            // Use the createCardWithWhiteboard function to associate the new card with the selected whiteboard
-            const createdCard = await createCardWithWhiteboard(whiteboardId, newCardData);
+
+            // Clean the content using DOMPurify
+            const sanitizedContent = DOMPurify.sanitize(newCardData.content);
+
+            // Use the createCardWithWhiteboard function to create a card with the whiteboard ID
+            const createdCard = await createCardWithWhiteboard(whiteboardId, {
+                ...newCardData,
+                content: sanitizedContent, 
+            });
             console.log("新建的卡片：", createdCard);
-    
+
             setCards(prevCards => [...prevCards, createdCard]);
-    
+
             setWhiteboards(prevWhiteboards => prevWhiteboards.map(wb => {
                 if (wb._id === whiteboardId) {
                     return {
                         ...wb,
-                        cards: [...wb.cards, createdCard] as CardData[]// Push the new card into the whiteboard's cards array
+                        cards: [...wb.cards, createdCard] as CardData[] // Push the new card into the whiteboard's cards array
                     };
                 }
                 return wb;
             }));
-    
+
             toast.success('卡片已新增');
         } catch (error:any) {
             console.error('新增卡片失敗：', error);
             toast.error(`新增卡片失敗：${error.message}`);
         }
     };
-    
+
 
     // 14. Display loading or error messages
     if (userError) {
