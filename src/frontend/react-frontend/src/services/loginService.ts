@@ -121,3 +121,27 @@ export const verifyCode = async (
     const data = await response.json();
     return data;
 };
+
+// GET /api/auth/me - Get current user based on token
+export const getUserFromToken = async (): Promise<UserData> => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+        throw new Error('No access token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/me`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+        },
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch current user');
+    }
+
+    const data: UserData = await response.json();
+    return data;
+};

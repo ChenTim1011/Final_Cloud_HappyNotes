@@ -27,7 +27,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination";
-import { getUserByName } from '@/services/userService'; 
+import { getUserFromToken } from '@/services/loginService';
 import { UserData } from '@/interfaces/User/UserData'; 
 import FullscreenEdit from '@/components/specific/Management/FullscreenEdit';
 import DOMPurify from 'dompurify'; 
@@ -54,31 +54,24 @@ const Management: React.FC = () => {
     const [userId, setUserId] = useState<string | null>(null);
     const [userError, setUserError] = useState<string | null>(null);
     const [allTags, setAllTags] = useState<string[]>([]); // New state to store all unique tags
+    const [currentUser, setCurrentUser] = useState<UserData | null>(null);
 
-    // 1. Fetch userId based on userName
+    // 1. Get current user data use getUserFromToken
     useEffect(() => {
-        const fetchUser = async () => {
-            if (!userName) {
-                setUserError('User name is missing in the URL.');
-                setIsLoading(false);
-                return;
-            }
-
+        const fetchCurrentUser = async () => {
             try {
-                const users: UserData[] = await getUserByName(userName);
-                if (users.length > 0) {
-                    setUserId(users[0]._id);
-                } else {
-                    setUserError('User not found.');
-                }
+                const user = await getUserFromToken();
+                setCurrentUser(user);
+                setUserId(user._id);
             } catch (error) {
-                console.error('Failed to fetch user data:', error);
-                setUserError('Failed to fetch user data.');
+                console.error('Failed to fetch current user:', error);
+                setUserError('Failed to fetch current user.');
+                setIsLoading(false);
             }
         };
 
-        fetchUser();
-    }, [userName]);
+        fetchCurrentUser();
+    }, []);
 
     // 2. Fetch whiteboards based on userId and ensure cards are populated
     useEffect(() => {
@@ -409,7 +402,7 @@ const Management: React.FC = () => {
         <div className="min-h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
             {/* Sidebar with fixed position */}
             <div className="fixed top-[-20px] left-[-5px] h-screen w-64 z-50">
-                <Sidebar />
+                <Sidebar currentUser={currentUser} setCurrentUser={setCurrentUser} />
             </div>
 
             {/* Header Bar */}

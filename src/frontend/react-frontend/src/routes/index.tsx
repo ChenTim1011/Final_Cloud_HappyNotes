@@ -9,7 +9,6 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Login/Register';
 import ResetPassword from '@/pages/Login/ResetPassword';
 import Management from '@/pages/Management';
-import { UserProvider } from '@/contexts/UserContext';
 import ProtectedRoute from './ProtectedRoute';
 
 

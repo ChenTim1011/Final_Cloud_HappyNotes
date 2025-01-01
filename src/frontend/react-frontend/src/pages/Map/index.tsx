@@ -7,20 +7,16 @@ import { WhiteboardUpdateData } from '@/interfaces/Whiteboard/WhiteboardUpdateDa
 import { CreateWhiteboardData } from '@/interfaces/Whiteboard/CreateWhiteboardData';
 import { UserData } from '@/interfaces/User/UserData';
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
-import { getUserByName, updateUser } from '@/services/userService';
+import { updateUser } from '@/services/userService';
+import { getUserFromToken } from '@/services/loginService';
 import { createWhiteboard, deleteWhiteboardById, updateWhiteboard } from '@/services/whiteboardService';
 import Sidebar from '@/components/common/sidebar';
 import { Rnd } from 'react-rnd';
 
-interface AlignmentLine {
-  orientation: 'horizontal' | 'vertical';
-  position: number;
-}
-
 const Map: React.FC = () => {
     const navigate = useNavigate();
     const { userName } = useParams<{ userName: string }>();
-    const [users, setUsers] = useState<UserData[]>([]);
+    const [currentUser, setCurrentUser] = useState<UserData | null>(null);
     const [whiteboards, setWhiteboards] = useState<WhiteboardData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -29,41 +25,49 @@ const Map: React.FC = () => {
     const [newWhiteboardTitle, setNewWhiteboardTitle] = useState<string>('');
     const [newWhiteboardPrivate, setNewWhiteboardPrivate] = useState<boolean>(false);
     const [draggingWhiteboardId, setDraggingWhiteboardId] = useState<string | null>(null); // Track which whiteboard is being dragged
-    const [alignmentLines, setAlignmentLines] = useState<AlignmentLine[]>([]); // State to hold alignment lines
     const [zoomLevel, setZoomLevel] = useState<number>(1); // State for zoom level
     const whiteboardRef = useRef<HTMLDivElement>(null);
 
+    // Fetch current user data when the component mounts
+    useEffect(() => {
+      const fetchCurrentUser = async () => {
+          try {
+              const user = await getUserFromToken();
+              setCurrentUser(user);
+              setLoading(false);
+          } catch (error) {
+              console.error('Failed to fetch current user:', error);
+              setError('Failed to fetch current user.');
+              setLoading(false);
+              navigate('/auth/login'); 
+          }
+      };
+
+      fetchCurrentUser();
+  }, [navigate]);
+
     // Fetch whiteboards data from the backend when the component mounts
     useEffect(() => {
-        const fetchWhiteboardsData = async () => {
-            try {
-                const users = await getUserByName(userName);
-                setUsers(users);
-                const data = users[0].whiteboards as WhiteboardData[];
+      const fetchWhiteboardsData = async () => {
+          if (!currentUser) return;
+          try {
+              const data = currentUser.whiteboards as WhiteboardData[];
+              const validatedData = data.map(wb => ({
+                  ...wb,
+                  position: wb.position || { x: 0, y: 0 },
+                  dimensions: wb.dimensions || { width: 200, height: 150 },
+              }));
+              setWhiteboards(validatedData);
+              setLoading(false);
+          } catch (err: any) {
+              console.error('Failed to fetch whiteboards:', err);
+              setError(err.message || 'Failed to fetch whiteboards');
+              setLoading(false);
+          }
+      };
 
-                // Validate the data
-                const validatedData = data.map(wb => {
-                    if (!wb._id) {
-                        throw new Error('Whiteboard data does not have an ID');
-                    }
-                    // Ensure position and dimensions are present
-                    return {
-                        ...wb,
-                        position: wb.position || { x: 0, y: 0 },
-                        dimensions: wb.dimensions || { width: 200, height: 150 },
-                    };
-                });
-                setWhiteboards(validatedData);
-                setLoading(false);
-            } catch (err: any) {
-                console.error('Failed to fetch whiteboards:', err);
-                setError(err.message || 'Failed to fetch whiteboards');
-                setLoading(false);
-            }
-        };
-                
         fetchWhiteboardsData();
-    }, [userName]); 
+    }, [currentUser]);
 
     // Handle creating a new whiteboard
     const handleCreateWhiteboard = async (e: FormEvent) => {
@@ -74,13 +78,10 @@ const Map: React.FC = () => {
             return;
         }
     
-      
-        if (users.length === 0) {
+        if (!currentUser) {
             alert('User data is not available.');
             return;
         }
-
-        const userId = users[0]._id;
 
         // Ensure contextMenu is not null
         if (!contextMenu) {
@@ -91,7 +92,7 @@ const Map: React.FC = () => {
         const whiteboardData: CreateWhiteboardData = {
             whiteboardTitle: newWhiteboardTitle,
             isPrivate: newWhiteboardPrivate,
-            userId: userId,
+            userId: currentUser._id,
             position: { x: contextMenu.x, y: contextMenu.y }, // Use the context menu position
             dimensions: { width: 200, height: 150 },
             cards: [],
@@ -109,12 +110,16 @@ const Map: React.FC = () => {
             setContextMenu(null);
             setIsAdding(false);
 
-            const updatedUser: UserUpdateData = {
+            const updatedUser: Partial<UserUpdateData> = {
                 whiteboards: updatedWhiteboards,
             };
             
             try {
-                await updateUser(users[0]._id, updatedUser);
+                await updateUser(currentUser._id, updatedUser);
+                setCurrentUser({
+                    ...currentUser,
+                    whiteboards: updatedWhiteboards,
+                });
             } catch (err: any) {
                 console.error('Failed to create whiteboard:', err);
                 alert(err.message || 'Failed to create whiteboard');
@@ -135,12 +140,16 @@ const Map: React.FC = () => {
                 const updatedWhiteboards = whiteboards.filter((wb) => wb._id !== id);
                 setWhiteboards(updatedWhiteboards);
                 
-                const updatedUser: UserUpdateData = {
+                const updatedUser: Partial<UserUpdateData> = {
                     whiteboards: updatedWhiteboards,
                 };
         
                 try {
-                    await updateUser(users[0]._id, updatedUser);
+                    await updateUser(currentUser!._id, updatedUser);
+                    setCurrentUser({
+                        ...currentUser!,
+                        whiteboards: updatedWhiteboards,
+                    });
                 } catch (err: any) {
                     console.error('Failed to delete whiteboard:', err);
                     alert(err.message || 'Failed to delete whiteboard');
@@ -179,91 +188,56 @@ const Map: React.FC = () => {
         };
     }, [contextMenu]);
 
-
-
+    // Handle dragging of a whiteboard
     const handleDrag = (currentWb: WhiteboardData, d: { x: number; y: number }) => {
-      const adjustedX = d.x / zoomLevel; 
-      const adjustedY = d.y / zoomLevel; 
-  
-      const newAlignmentLines: AlignmentLine[] = [];
-      const currentEdges = {
-          left: adjustedX,
-          right: adjustedX + currentWb.dimensions.width,
-          top: adjustedY,
-          bottom: adjustedY + currentWb.dimensions.height,
-          centerX: adjustedX + currentWb.dimensions.width / 2,
-          centerY: adjustedY + currentWb.dimensions.height / 2,
-      };
-  
-      whiteboards.forEach(wb => {
-          if (wb._id === currentWb._id) return;
-  
-          const edges = {
-              left: wb.position.x,
-              right: wb.position.x + wb.dimensions.width,
-              top: wb.position.y,
-              bottom: wb.position.y + wb.dimensions.height,
-              centerX: wb.position.x + wb.dimensions.width / 2,
-              centerY: wb.position.y + wb.dimensions.height / 2,
-          };
-  
-          const tolerance = 10; 
-  
-          if (Math.abs(currentEdges.left - edges.left) < tolerance) {
-              newAlignmentLines.push({ orientation: 'vertical', position: edges.left });
-          }
-          if (Math.abs(currentEdges.right - edges.right) < tolerance) {
-              newAlignmentLines.push({ orientation: 'vertical', position: edges.right });
-          }
-          if (Math.abs(currentEdges.centerX - edges.centerX) < tolerance) {
-              newAlignmentLines.push({ orientation: 'vertical', position: edges.centerX });
-          }
-  
-          if (Math.abs(currentEdges.top - edges.top) < tolerance) {
-              newAlignmentLines.push({ orientation: 'horizontal', position: edges.top });
-          }
-          if (Math.abs(currentEdges.bottom - edges.bottom) < tolerance) {
-              newAlignmentLines.push({ orientation: 'horizontal', position: edges.bottom });
-          }
-          if (Math.abs(currentEdges.centerY - edges.centerY) < tolerance) {
-              newAlignmentLines.push({ orientation: 'horizontal', position: edges.centerY });
-          }
-      });
-  
-      setAlignmentLines(newAlignmentLines);
-  };
-  
-  const handleDragStop = async (id: string, d: { x: number; y: number }) => {
-      const adjustedX = d.x / zoomLevel; 
-      const adjustedY = d.y / zoomLevel; 
-  
-      try {
-          const whiteboardIndex = whiteboards.findIndex(wb => wb._id === id);
-          if (whiteboardIndex === -1) return;
-  
-          const updatedWhiteboards = [...whiteboards];
-          updatedWhiteboards[whiteboardIndex] = {
-              ...updatedWhiteboards[whiteboardIndex],
-              position: { x: adjustedX, y: adjustedY },
-              updatedAt: new Date(),
-          };
-  
-          setWhiteboards(updatedWhiteboards);
-  
-          const updateData: Partial<WhiteboardUpdateData> = {
-              position: { x: adjustedX, y: adjustedY },
-              updatedAt: new Date(),
-          };
-  
-          await updateWhiteboard(id, updateData);
-      } catch (err: any) {
-          console.error('Failed to update whiteboard position:', err);
-          alert(err.message || 'Failed to update whiteboard position');
-      } finally {
-          setDraggingWhiteboardId(null);
-          setAlignmentLines([]);
-      }
-  };
+        const adjustedX = d.x / zoomLevel; 
+        const adjustedY = d.y / zoomLevel; 
+
+        // Update position of the whiteboard being dragged
+        const updatedWhiteboards = whiteboards.map(wb => {
+            if (wb._id === currentWb._id) {
+                return {
+                    ...wb,
+                    position: { x: adjustedX, y: adjustedY },
+                };
+            }
+            return wb;
+        });
+
+        setWhiteboards(updatedWhiteboards);
+    };
+    
+    // Handle drag stop to update the whiteboard position in the backend
+    const handleDragStop = async (id: string, d: { x: number; y: number }) => {
+        const adjustedX = d.x / zoomLevel; 
+        const adjustedY = d.y / zoomLevel; 
+
+        try {
+            const whiteboardIndex = whiteboards.findIndex(wb => wb._id === id);
+            if (whiteboardIndex === -1) return;
+
+            const updatedWhiteboards = [...whiteboards];
+            updatedWhiteboards[whiteboardIndex] = {
+                ...updatedWhiteboards[whiteboardIndex],
+                position: { x: adjustedX, y: adjustedY },
+                updatedAt: new Date(),
+            };
+
+            setWhiteboards(updatedWhiteboards);
+
+            const updateData: Partial<WhiteboardUpdateData> = {
+                position: { x: adjustedX, y: adjustedY },
+                updatedAt: new Date(),
+            };
+
+            await updateWhiteboard(id, updateData);
+        } catch (err: any) {
+            console.error('Failed to update whiteboard position:', err);
+            alert(err.message || 'Failed to update whiteboard position');
+        } finally {
+            setDraggingWhiteboardId(null);
+        }
+    };
 
     // Function to handle zoom in
     const handleZoomIn = () => {
@@ -292,8 +266,8 @@ const Map: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen bg-[#F7F1F0]" onContextMenu={handleContextMenu}>
-      {/* Render the sidebar */}
-      <Sidebar />
+      {/* Render the sidebar and pass currentUser and setCurrentUser as props */}
+      <Sidebar currentUser={currentUser} setCurrentUser={setCurrentUser} />
 
       {/* Main content without margin, whiteboard occupies full screen */}
       <div className="absolute top-0 left-0 w-full h-full">
@@ -305,89 +279,77 @@ const Map: React.FC = () => {
         <div className="fixed bottom-10 right-10 z-10 flex flex-col space-y-2">
           <button
             onClick={handleZoomIn}
-            className="px-3 py-2 bg-[#A15C38] text-white rounded shadow hover:bg-[#8B4F2F] transition"
+            className="px-3 py-2 bg-[#A15C38] text-white rounded hover:bg-[#8B4F2F] transition"
             title="放大"
           >
             放大
           </button>
           <button
             onClick={handleZoomOut}
-            className="px-3 py-2 bg-[#A15C38] text-white rounded shadow hover:bg-[#8B4F2F] transition"
+            className="px-3 py-2 bg-[#A15C38] text-white rounded hover:bg-[#8B4F2F] transition"
             title="縮小"
           >
             縮小
           </button>
           <button
             onClick={handleResetZoom}
-            className="px-3 py-2 bg-[#A15C38] text-white rounded shadow hover:bg-[#8B4F2F] transition"
+            className="px-3 py-2 bg-[#A15C38] text-white rounded hover:bg-[#8B4F2F] transition"
             title="重置縮放"
           >
             重置
           </button>
         </div>
 
-        {/* Whiteboard container with zoom applied */}
-        <div
-          className="overflow-auto bg-[#C3A6A0] relative w-full h-full"
-          style={{ 
-            width: '2000px', 
-            height: '2000px',
-            transform: `scale(${zoomLevel})`,
-            transformOrigin: '0 0',
-          }}
-          ref={whiteboardRef}
-        >
-          {/* Render alignment lines */}
-          {alignmentLines.map((line, index) => (
-            <div
-              key={index}
-              className={`absolute bg-blue-500`}
-              style={
-                line.orientation === 'vertical'
-                  ? { left: line.position, top: 0, bottom: 0, width: 1 }
-                  : { top: line.position, left: 0, right: 0, height: 1 }
-              }
-            />
-          ))}
-
-          {whiteboards.map((whiteboard) => (
-            <Rnd
-              key={whiteboard._id}
-              size={{ width: whiteboard.dimensions.width, height: whiteboard.dimensions.height }}
-              position={{
-                x: whiteboard.position.x * zoomLevel,
-                y: whiteboard.position.y * zoomLevel,
-              }}
-              onDragStart={() => { setDraggingWhiteboardId(whiteboard._id); }}
-              onDrag={(e, d) => { 
-                handleDrag(whiteboard, d); // Calculate alignment during dragging
-              }}
-              onDragStop={(e, d) => { 
-                handleDragStop(whiteboard._id, d); 
-              }}
-              bounds="parent"
-              dragHandleClassName="drag-handle"
-              enableResizing={false} 
-            >
-              <div
-                className="relative bg-white border border-[#C3A6A0] shadow-xl rounded-2xl p-6 cursor-pointer transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
-                onClick={() => {
-                  if (!draggingWhiteboardId) {
-                    navigate(`/whiteboard/${whiteboard._id}`);
-                  }
-                }}
-              >
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (whiteboard._id) handleDeleteWhiteboard(whiteboard._id);
-                  }}
-                  className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg"
-                  title="Delete Whiteboard"
+                {/* Whiteboard container with zoom applied */}
+                <div
+                    className="overflow-auto bg-[#C3A6A0] relative w-full h-full"
+                    style={{ 
+                        width: '2000px', 
+                        height: '2000px',
+                        transform: `scale(${zoomLevel})`,
+                        transformOrigin: '0 0',
+                    }}
+                    ref={whiteboardRef}
                 >
-                  🗑️
-                </button>
+                    {/* Render whiteboards */}
+                    {whiteboards.map((whiteboard) => (
+                        <Rnd
+                            key={whiteboard._id}
+                            size={{ width: whiteboard.dimensions.width, height: whiteboard.dimensions.height }}
+                            position={{
+                                x: whiteboard.position.x * zoomLevel,
+                                y: whiteboard.position.y * zoomLevel,
+                            }}
+                            onDragStart={() => { setDraggingWhiteboardId(whiteboard._id); }}
+                            onDrag={(e, d) => { 
+                                handleDrag(whiteboard, d); // Update position during dragging
+                            }}
+                            onDragStop={(e, d) => { 
+                                handleDragStop(whiteboard._id, d); 
+                            }}
+                            bounds="parent"
+                            dragHandleClassName="drag-handle"
+                            enableResizing={false} 
+                        >
+                            <div
+                                className="relative bg-white border border-[#C3A6A0] shadow-xl rounded-2xl p-6 cursor-pointer transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
+                                onClick={() => {
+                                    if (!draggingWhiteboardId) {
+                                        navigate(`/whiteboard/${whiteboard._id}`);
+                                    }
+                                }}
+                            >
+                                {/* Delete Button */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (whiteboard._id) handleDeleteWhiteboard(whiteboard._id);
+                                    }}
+                                    className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg"
+                                    title="Delete Whiteboard"
+                                >
+                                    🗑️
+                                </button>
 
                 {/* Whiteboard Title */}
                 <h3 className="text-2xl font-serif font-bold text-[#262220] drag-handle">
@@ -452,9 +414,6 @@ const Map: React.FC = () => {
                 required
               />
             </div>
-
-
-
             <div className="flex justify-end space-x-4">
               <button
                 type="button"

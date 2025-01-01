@@ -26,21 +26,21 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, setCurrentUser }) => {
     const updatedUser: Partial<UserUpdateData> = {
       isLoggedin: false,
     };
-    
 
     try {
-        if (currentUser) {
-          await updateUser(currentUser._id, updatedUser);
-        }
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+      await updateUser(currentUser._id, updatedUser);
+      setCurrentUser(null);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      toast.success('成功登出');
+      navigate('/auth/login');
     } catch (err: any) {
-      console.error('Failed to log out:', err);
+      console.error('登出失敗：', err);
       toast.error('登出失敗，請稍後再試');
     }
   };
 
-  // Show a simple sidebar with a hamburger menu button if the user is not logged in
+  // Show the sidebar toggle button if the user is not logged in
   if (!currentUser) {
     return (
       <div>

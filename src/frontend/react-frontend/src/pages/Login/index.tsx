@@ -3,10 +3,10 @@
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
-import { updateUser, getUserByName} from '@/services/userService';
+import { updateUser, getUserByName } from '@/services/userService';
 import { authenticateUser } from "@/services/loginService";
 import { toast } from 'react-toastify';
-import { UserData } from '@/interfaces/User/UserData'; // 確保有 UserData 接口
+import { UserData } from '@/interfaces/User/UserData';
 
 const Login: React.FC = () => {
   const userNameRef = useRef<HTMLInputElement | null>(null);
@@ -14,8 +14,7 @@ const Login: React.FC = () => {
 
   // Use the useNavigate hook to handle page navigation
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<UserData | null>(null); // 本地狀態
-
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null); 
   const login = async () =>{
       try {
 
@@ -54,13 +53,16 @@ const Login: React.FC = () => {
               isLoggedin: true,
           };
 
-          try {
-            const [auth, accessToken, refreshToken] = await authenticateUser(userName, userPassword);
-            await updateUser(users[0]._id,updatedUser);
-            
-            // store tokens
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
+      try {
+        const [auth, accessToken, refreshToken] = await authenticateUser(userName, userPassword);
+        await updateUser(users[0]._id, updatedUser);
+
+        // Store tokens
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+
+        // Set currentUser state
+        setCurrentUser(auth); 
 
             toast.success('登入成功！');
             navigate(`../../map/${auth.userName}`);

@@ -5,17 +5,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Card from '@/components/specific/Whiteboard/Card';
 import { CardData } from '@/interfaces/Card/CardData';
 import { WhiteboardData } from '@/interfaces/Whiteboard/WhiteboardData';
-import { getUserById } from '@/services/userService';
+import { UserData } from '@/interfaces/User/UserData';
+import { getUserFromToken } from '@/services/loginService';
 import { getWhiteboardById, updateWhiteboard } from '@/services/whiteboardService';
 import { deleteCard, createCard, updateCard } from '@/services/cardService';
 import Sidebar from '@/components/common/sidebar';
 import { toast } from 'react-toastify';
-import { useUser } from '@/contexts/UserContext';
 
 const Whiteboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { currentUser, userLoading } = useUser();
+    const [currentUser, setCurrentUser] = useState<UserData | null>(null);
     const [whiteboard, setWhiteboard] = useState<WhiteboardData | null>(null);
     const [cards, setCards] = useState<CardData[]>([]);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -30,27 +30,21 @@ const Whiteboard: React.FC = () => {
 
     const whiteboardRef = useRef<HTMLDivElement>(null); 
 
-    // Fetch whiteboard and associated cards data when the component mounts or id changes
+    // 1. Get the current user use getUserFromToken
     useEffect(() => {
-        const checkAccess = async () => {
-            if (userLoading) {
-                // User data is still loading, do nothing
-                return;
-            }
-            if (!currentUser) {
+        const fetchCurrentUser = async () => {
+            try {
+                const user: UserData = await getUserFromToken(); 
+                setCurrentUser(user);
+            } catch (error) {
+                console.error('獲取當前用戶失敗：', error);
                 toast.error('請先登入');
                 navigate('/auth/login');
-                return;
-            }
-            if (!id) {
-                toast.error('找不到白板');
-                navigate(`/map/${currentUser.userName}`);
-                return;
             }
         };
     
-        checkAccess();
-    }, [currentUser, id, navigate, userLoading]);
+        fetchCurrentUser();
+    }, [navigate]);
 
     // Fetch whiteboard data
     useEffect(() => {
@@ -77,7 +71,9 @@ const Whiteboard: React.FC = () => {
             }
         };
 
-        fetchData();
+        if (currentUser) {
+            fetchData();
+        }
     }, [id, currentUser, navigate]);
 
     // Function to handle copying a card
@@ -248,7 +244,7 @@ const Whiteboard: React.FC = () => {
     return (
         <div className="relative w-full h-screen bg-[#F7F1F0]" onContextMenu={(e) => handleRightClick(e)} role="application" tabIndex={0}>
             {/* Render the sidebar */}
-            <Sidebar />
+            <Sidebar currentUser={currentUser} setCurrentUser={setCurrentUser} />
 
             {/* Main content */}
             <div className="flex flex-col h-full">
