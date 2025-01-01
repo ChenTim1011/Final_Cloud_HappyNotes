@@ -49,7 +49,8 @@ const Tag: React.FC<TagProps> = ({ currentTag = '', onUpdateTag }) => {
         // Display the tag value or "New Tag"
         <span
           onDoubleClick={handleDoubleClick}
-          className="text-gray-700 cursor-pointer hover:text-blue-500"
+          className="text-gray-700 cursor-pointer hover:text-blue-500 truncate w-full block"
+          title={currentTag} 
         >
           標籤: {currentTag || '新的標籤'}
         </span>
