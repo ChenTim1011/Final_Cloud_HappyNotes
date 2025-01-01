@@ -13,10 +13,6 @@
     border-radius: 0.75rem; /* Maintain consistent rounded corners */
 }
 
-.card-container:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add hover shadow */
-    transform: translateY(-4px); /* Add floating effect */
-}
 
 .card-content {
     background-color: #F7F1F0; /* Soft light-colored background */

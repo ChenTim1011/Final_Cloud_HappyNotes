@@ -1,5 +1,5 @@
 // src/components/specific/Whiteboard/Card.tsx 
-
+import { v4 as uuidv4 } from 'uuid';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CardData } from '@/interfaces/Card/CardData';
 import { Rnd } from 'react-rnd';
@@ -9,24 +9,40 @@ import { useBatchUpdate } from '@/components/specific/Card/BatchUpdateContext';
 import { toast } from 'react-toastify';
 import debounce from 'lodash.debounce';
 import './Card.css';
+import { deleteConnection, updateConnection, addConnection } from '@/services/cardService';
 
+type DraggingConnection = {
+  connectionId: string;
+  type: 'start' | 'end';
+};
+interface ConnectionType {
+  id: string;
+  //startCardId?: string;
+  //startDirection: 'top' | 'bottom' | 'left' | 'right';
+  startOffset: { x: number; y: number };
+  endPoint: { x: number; y: number };
+}
 // Interface for Card component props extending CardData
 interface CardProps extends CardData {
   onDelete: (cardId: string) => void;
   isSelected: boolean;
-  onSelect: (cardId: string) => void;
+  onSelect: (cardId: string | null) => void;
   onCopyCard: (card: CardData) => void;
   setCards: React.Dispatch<React.SetStateAction<CardData[]>>;
   setFullscreenCardId: (id: string | null) => void;
   onRightClick?: (e: React.MouseEvent, cardId: string) => void;
   onStartConnection?: (cardId: string, startOffset: { x: number; y: number }, startPoint: { x: number; y: number }) => void;
   allCards: CardData[];
+  onPositionChange?: (cardId: string, newPosition: { x: number; y: number }) => void;
+  connections: ConnectionType[];
+  setSelectedConnectionId: React.Dispatch<React.SetStateAction<string | null>>;
+  onDeleteConnection?: (connectionId: string) => void;
 }
 
-const MIN_HEIGHT = 300; // Adjust min height for QuillEditor
-const MAX_HEIGHT = 800;
-const MIN_WIDTH = 300;
-const MAX_WIDTH = 800;
+const MIN_HEIGHT = 0; // Adjust min height for QuillEditor
+const MAX_HEIGHT = 9000;
+const MIN_WIDTH = 0;
+const MAX_WIDTH = 9000;
 
 const Card: React.FC<CardProps> = React.memo(({
   _id,
@@ -37,7 +53,7 @@ const Card: React.FC<CardProps> = React.memo(({
   foldOrNot,
   position,
   dimensions,
-  //connection,
+  connections,
   //connectionBy,
   comments,
   onDelete,
@@ -49,6 +65,8 @@ const Card: React.FC<CardProps> = React.memo(({
   onStartConnection,
   onRightClick,
   allCards,
+  onPositionChange,
+  onDeleteConnection,
 }) => {
 
   // Local state for editing mode and input values
@@ -63,13 +81,20 @@ const Card: React.FC<CardProps> = React.memo(({
   const cardRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null); // Ref to the title element
   const contentRef = useRef<HTMLDivElement>(null); // Ref to QuillEditor content
-
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [activeConnection, setActiveConnection] = useState<{
     startPoint: { x: number; y: number };
     endPoint: { x: number; y: number };
   } | null>(null);
   const { addCardUpdate } = useBatchUpdate();
 
+  const [localConnections, setLocalConnections] = useState(connections || []);
+
+  const [draggingConnection, setDraggingConnection] = useState<{
+    connectionId: string;
+    type: 'start' | 'end';
+  } | null>(null);
+  const draggingConnectionRef = useRef<DraggingConnection | null>(null);
   // Function to update card content with debounce
   const handleUpdateCard = useCallback((cardId: string, changes: Partial<CardData>) => {
     // Update card in local state
@@ -83,48 +108,190 @@ const Card: React.FC<CardProps> = React.memo(({
     }, 5000),
     [handleUpdateCard]
   );
-
-  const handleStartConnectionMouseDown = (e: React.MouseEvent, direction: 'top' | 'bottom' | 'left' | 'right') => {
+  const handleStartConnectionMouseDown = (
+    e: React.MouseEvent,
+    direction: 'top' | 'bottom' | 'left' | 'right'
+  ) => {
     e.stopPropagation();
     e.preventDefault(); // 防止默認行為
 
-    // 記錄起點位置（相對於窗口的滑鼠位置）
-    const rect = cardRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    // 以卡片的 position 為基準計算起點
     let startX = 0;
     let startY = 0;
 
-    // 根據點擊的方向計算起點
     switch (direction) {
       case 'top':
-        startX = rect.left + rect.width / 2;
-        startY = rect.top;
+        startX = position.x + localDimensions.width / 2; // 中心的 X 座標
+        startY = position.y; // 卡片的上邊緣
         break;
       case 'bottom':
-        startX = rect.left + rect.width / 2;
-        startY = rect.bottom;
+        startX = position.x + localDimensions.width / 2; // 中心的 X 座標
+        startY = position.y + localDimensions.height; // 卡片的下邊緣
         break;
       case 'left':
-        startX = rect.left;
-        startY = rect.top + rect.height / 2;
+        startX = position.x; // 卡片的左邊緣
+        startY = position.y + localDimensions.height / 2; // 中心的 Y 座標
         break;
       case 'right':
-        startX = rect.right;
-        startY = rect.top + rect.height / 2;
+        startX = position.x + localDimensions.width; // 卡片的右邊緣
+        startY = position.y + localDimensions.height / 2; // 中心的 Y 座標
         break;
       default:
         console.error('Invalid direction:', direction);
         return;
     }
 
+    // 設置連線的起點和終點
     const startPoint = { x: startX, y: startY };
     setActiveConnection({ startPoint, endPoint: startPoint });
-    // 更新 activeConnection 狀態
+
+    // 如果有回調函數，將連線的初始信息傳遞給父組件
     if (onStartConnection) {
-      onStartConnection(_id, startPoint, { x: e.clientX, y: e.clientY });
+      onStartConnection(_id, { x: startX, y: startY }, { x: e.clientX, y: e.clientY });
     }
   };
 
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingConnectionRef.current) return; // 確保 ref 始終是最新值
+      //console.log("draggingConnectionRef:",draggingConnectionRef)
+
+      const { connectionId, type } = draggingConnectionRef.current;
+
+      setLocalConnections((prevConnections) =>
+        prevConnections.map((conn) => {
+          if (conn.id === connectionId) {
+            if (type === 'start') {
+              const rect = cardRef.current?.getBoundingClientRect();
+              if (!rect) return conn;
+
+              const mouseX = e.clientX;
+              const mouseY = e.clientY;
+
+              // 限制滑鼠位置在卡片邊框
+              const isCloserToVerticalEdge =
+                Math.min(Math.abs(mouseX - rect.left), Math.abs(mouseX - rect.right)) <
+                Math.min(Math.abs(mouseY - rect.top), Math.abs(mouseY - rect.bottom));
+
+              let clampedX = mouseX;
+              let clampedY = mouseY;
+
+              if (isCloserToVerticalEdge) {
+                // 靠近左或右邊
+                clampedX = mouseX < rect.left + rect.width / 2 ? rect.left : rect.right;
+                clampedY = Math.max(rect.top, Math.min(mouseY, rect.bottom));
+              } else {
+                // 靠近上或下邊
+                clampedY = mouseY < rect.top + rect.height / 2 ? rect.top : rect.bottom;
+                clampedX = Math.max(rect.left, Math.min(mouseX, rect.right));
+              }
+
+              // 計算 startOffset
+              const offsetX = clampedX - rect.left;
+              const offsetY = clampedY - rect.top;
+
+              return { ...conn, startOffset: { x: offsetX, y: offsetY } };
+            } else {
+              // 自動校正邏輯 - 尋找最近的卡片並修正終點
+              const mouseX = e.clientX;
+              const mouseY = e.clientY;
+
+              let nearestCard = null;
+              let nearestPoint: { x: number; y: number } = { x: mouseX, y: mouseY };
+
+              // 遍歷所有卡片，找到最近的邊界
+              allCards.forEach((card) => {
+                if (card._id === _id) return; // 跳過當前卡片
+
+                const rect = {
+                  top: card.position.y,
+                  bottom: card.position.y + card.dimensions.height,
+                  left: card.position.x,
+                  right: card.position.x + card.dimensions.width,
+                };
+
+                let clampedX = mouseX;
+                let clampedY = mouseY;
+
+                if (
+                  mouseX > rect.left &&
+                  mouseX < rect.right &&
+                  mouseY > rect.top &&
+                  mouseY < rect.bottom
+                ) {
+                  // 滑鼠在卡片內部，校正到邊界
+                  const isCloserToVerticalEdge =
+                    Math.min(Math.abs(mouseX - rect.left), Math.abs(mouseX - rect.right)) <
+                    Math.min(Math.abs(mouseY - rect.top), Math.abs(mouseY - rect.bottom));
+
+                  if (isCloserToVerticalEdge) {
+                    clampedX = mouseX < rect.left + (rect.right - rect.left) / 2 ? rect.left : rect.right;
+                    clampedY = Math.max(rect.top, Math.min(mouseY, rect.bottom));
+                  } else {
+                    clampedY = mouseY < rect.top + (rect.bottom - rect.top) / 2 ? rect.top : rect.bottom;
+                    clampedX = Math.max(rect.left, Math.min(mouseX, rect.right));
+                  }
+                }
+
+                const distance = Math.sqrt(
+                  Math.pow(mouseX - clampedX, 2) + Math.pow(mouseY - clampedY, 2)
+                );
+
+                if (distance < 50 && distance) {
+                  nearestCard = card;
+                  nearestPoint = { x: clampedX, y: clampedY };
+                }
+              });
+
+              return { ...conn, endPoint: nearestCard ? nearestPoint : { x: mouseX, y: mouseY } };
+            }
+          }
+          return conn;
+        })
+      );
+    };
+
+    const handleMouseUp = async (e: MouseEvent) => {
+      console.log("draggingConnectionRef:", draggingConnectionRef.current);
+      if (draggingConnectionRef.current) {
+        const { connectionId, type } = draggingConnectionRef.current;
+        const updatedConnection = localConnections.find((conn) => conn.id === connectionId);
+
+        if (updatedConnection) {
+          try {
+            await updateConnection(_id, connectionId, {
+              ...(type === 'start' ? { startOffset: updatedConnection.startOffset } : {}),
+              ...(type === 'end' ? { endPoint: updatedConnection.endPoint } : {}),
+            });
+            console.log("updatedConnection:", updatedConnection);
+            setLocalConnections((prevConnections) =>
+              prevConnections.map((conn) =>
+                conn.id === connectionId ? { ...conn, ...updatedConnection } : conn
+              )
+            );
+            //window.location.reload();
+
+
+
+            console.log('Connection updated successfully');
+          } catch (error) {
+            console.error('Failed to update connection:', error);
+          }
+        }
+
+        draggingConnectionRef.current = null; // 重置 ref
+        setDraggingConnection(null); // 同步重置 state
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [localConnections, _id, allCards]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -225,6 +392,48 @@ const Card: React.FC<CardProps> = React.memo(({
     };
   }, [activeConnection, allCards, _id]);
 
+
+  const activeConnection_handleMouseUp = async () => {
+    if (!activeConnection) {
+      // 如果 activeConnection 為 null，直接返回
+      console.warn("activeConnection is null, cannot complete connection.");
+      return;
+    }
+
+    const { startPoint, endPoint } = activeConnection;
+
+    // 创建新连接对象
+    const newConnection = {
+      id: uuidv4(),
+      startCardId: _id,
+      startOffset: {
+        x: startPoint.x - position.x,
+        y: startPoint.y - position.y,
+      },
+      endPoint,
+    };
+
+    try {
+      // 将连接保存到后端
+      await addConnection(_id, newConnection);
+      setLocalConnections((prevConnections) => [...prevConnections, newConnection]);
+
+      console.log("Connection saved:", newConnection);
+    } catch (error) {
+      console.error("Failed to save connection:", error);
+      toast.error("無法保存連線");
+    }
+
+    // 清空 activeConnection 状态
+    setActiveConnection(null);
+  };
+  useEffect(() => {
+    window.addEventListener('mouseup', activeConnection_handleMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', activeConnection_handleMouseUp);
+    };
+  }, [activeConnection, position]);
+
   // Function to save edited content and update the card  
   const handleSave = useCallback(() => {
     if (_id) {
@@ -232,8 +441,9 @@ const Card: React.FC<CardProps> = React.memo(({
         cardTitle: editedTitle,
         content: editedContent,
         dimensions: localDimensions,
+        position: localPosition,
         //connection: connection,
-        connectionBy: connectionBy,
+        //connectionBy: connectionBy,
       };
 
       setCards(prevCards => {
@@ -290,6 +500,27 @@ const Card: React.FC<CardProps> = React.memo(({
     }
   }, [_id, onDelete]);
 
+  const handleDeleteConnection = useCallback(async () => {
+    if (!selectedConnectionId || !_id) return; // 如果沒有選中的連線或卡片 ID，直接返回
+
+    try {
+      // 調用後端刪除連線 API
+      //console.log("MKMKMKKhandleDeleteConnection:",_id, selectedConnectionId)
+      await deleteConnection(_id, selectedConnectionId);
+
+      setLocalConnections((prevConnections) =>
+        prevConnections.filter((connection) => connection.id !== selectedConnectionId)
+      );
+      onDeleteConnection?.(selectedConnectionId);
+      // 更新本地 connections 狀態
+      // 清除選中狀態
+      setSelectedConnectionId(null);
+      console.log(`Connection ${selectedConnectionId} deleted.`);
+    } catch (error) {
+      console.error(`Failed to delete connection: ${selectedConnectionId}`, error);
+      alert('Failed to delete connection.');
+    }
+  }, [selectedConnectionId, _id, setSelectedConnectionId]);
   // Function to toggle fold state without affecting editing state  
   const handleToggleFold = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering onSelect
@@ -357,6 +588,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
   // Resize handler to update dimensions and position
   const handleResize = useCallback((size: { width: number; height: number }, position: { x: number; y: number }) => {
+
     const newDimensions = {
       width: Math.max(size.width, MIN_WIDTH),
       height: Math.max(size.height, MIN_HEIGHT)
@@ -400,7 +632,53 @@ const Card: React.FC<CardProps> = React.memo(({
     setLocalDimensions(dimensions);
     setLocalPosition(position);
   }, [dimensions, position]);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 檢查是否按下 Ctrl+C 或 Cmd+C
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault(); // 阻止默認行為（例如，複製到剪貼簿）
+        if (isSelected) {
+          onCopyCard({
+            _id,
+            cardTitle,
+            content,
+            dueDate,
+            tag,
+            foldOrNot,
+            position,
+            dimensions,
+            comments,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+          console.log('Card copied:', _id);
+        }
+      }
+    };
 
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSelected, _id, cardTitle, content, dueDate, tag, foldOrNot, position, dimensions, comments, onCopyCard]);
+
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete') {
+        //const userConfirmed = window.confirm("你確定要刪除連結嗎?");
+        // if (userConfirmed) {
+        handleDeleteConnection(); // 調用刪除函數
+        // }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedConnectionId, _id]);
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
@@ -410,9 +688,96 @@ const Card: React.FC<CardProps> = React.memo(({
 
   return (
     <div
-      className="card-container"
-      style={{ position: 'relative' }}
     >
+      {/* SVG for connections */}
+      <svg
+        className="connections-layer"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          pointerEvents: selectedConnectionId ? 'auto' : 'none', // 動態切換 如果你點擊了line 你就不能drag card了
+          zIndex: 10,
+        }}
+        onClick={() => {
+          if (selectedConnectionId) setSelectedConnectionId(null);
+        }}
+      >
+        {localConnections.map((connection) => {
+          if (connection.endPoint) {
+            const startPoint = {
+              x: localPosition.x + connection.startOffset.x,
+              y: localPosition.y + connection.startOffset.y,
+            };
+            const { endPoint } = connection;
+
+            return (
+              <React.Fragment key={connection.id}>
+                <line
+                  x1={startPoint.x}
+                  y1={startPoint.y}
+                  x2={endPoint.x}
+                  y2={endPoint.y}
+                  stroke="transparent" // 透明
+                  strokeWidth={10} // 點擊區域寬度
+                  style={{ pointerEvents: 'stroke' }} // 讓點擊事件觸發在 stroke 上
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedConnectionId(connection.id);
+                    onSelect(null);
+                  }}
+                />
+
+                {/* 可見的細線 */}
+                <line
+                  x1={startPoint.x}
+                  y1={startPoint.y}
+                  x2={endPoint.x}
+                  y2={endPoint.y}
+                  stroke={selectedConnectionId === connection.id ? 'blue' : 'black'}
+                  strokeWidth={3} // 可見的細線寬度
+                />
+                {/* 只有當前連線被選中時，渲染藍點 */}
+                {selectedConnectionId === connection.id && (
+                  <>
+                    {/* 起點 */}
+                    <circle
+                      cx={startPoint.x}
+                      cy={startPoint.y}
+                      r={5}
+                      fill="blue"
+                      cursor="pointer"
+                      onMouseDown={(e) => {
+                        const direction: 'start' | 'end' = 'start';
+                        const connectionData = { connectionId: connection.id, type: direction }; // 構造新的 draggingConnection
+                        setDraggingConnection(connectionData); // 更新 state
+                        draggingConnectionRef.current = connectionData; // 更新 ref
+                      }}
+                    />
+                    {/* 終點 */}
+                    <circle
+                      cx={endPoint.x}
+                      cy={endPoint.y}
+                      r={5}
+                      fill="blue"
+                      cursor="pointer"
+                      onMouseDown={(e) => {
+                        const direction: 'start' | 'end' = 'end';
+                        const connectionData = { connectionId: connection.id, type: direction }; // 構造新的 draggingConnection
+                        setDraggingConnection(connectionData); // 更新 state
+                        draggingConnectionRef.current = connectionData; // 更新 ref
+                      }}
+                    />
+                  </>
+                )}
+              </React.Fragment>
+            );
+          }
+          return null;
+        })}
+      </svg>
       {activeConnection && (
         <svg
           style={{
@@ -439,8 +804,32 @@ const Card: React.FC<CardProps> = React.memo(({
         size={isFullscreen ? { width: '100vw', height: '100vh' } : localDimensions}
         position={isFullscreen ? { x: 0, y: 0 } : localPosition}
         onDragStop={(e, d) => {
-          if (!isFullscreen) {// Only handle drag stop if not fullscreen
-            handleResize({ width: localDimensions.width, height: localDimensions.height }, { x: d.x, y: d.y });
+          if (!isFullscreen) { // Only handle drag stop if not fullscreen
+            console.log("d.x,d.y", d);
+            const newPosition = { x: d.x, y: d.y };
+            // handleResize({ width: localDimensions.width, height: localDimensions.height }, newPosition);
+            setCards(prevCards => {
+              return prevCards.map(card => {
+                if (card._id === _id) {
+                  return { ...card, position: newPosition,dimensions:localDimensions }; // 同步父層狀態
+                }
+                return card;
+              });
+            });
+            setLocalPosition(newPosition);
+            // 通知父元件  卡片位置更新
+            onPositionChange?.(_id, newPosition);
+            //handleResize({ width: localDimensions.width, height: localDimensions.height }, { x: d.x, y: d.y });
+          }
+          //handleSave()
+        }}
+        onDrag={(e, d) => {
+          if (!isFullscreen) {
+            const newPosition = { x: d.x, y: d.y };
+            setLocalPosition(newPosition);
+
+            // 實時通知父元件位置變更
+            onPositionChange?.(_id, newPosition);
           }
         }}
         onResize={(e, direction, ref, delta, position) => {
@@ -454,6 +843,7 @@ const Card: React.FC<CardProps> = React.memo(({
           setLocalPosition(position);
         }}
         onResizeStop={(e, direction, ref, delta, position) => {
+          
           if (isFullscreen) return;
           handleResize(
             {
@@ -495,7 +885,11 @@ const Card: React.FC<CardProps> = React.memo(({
           className={`card-content bg-[#F7F1F0] border border-[#C3A6A0] p-6 rounded-xl shadow-lg relative flex flex-col ${isEditing ? '' : 'select-none'
             } ${isFullscreen ? 'fullscreen-content' : ''}`}
           onDoubleClick={() => setIsEditing(true)}
-          onClick={() => onSelect(_id)}
+          onClick={(e) => {
+            console.log("position:", position);
+            e.stopPropagation(); // 阻止冒泡到父容器
+            onSelect(_id); // 選中當前卡片
+          }}
           ref={cardRef}
           style={{ boxSizing: 'border-box', overflow: 'visible' }}
         >

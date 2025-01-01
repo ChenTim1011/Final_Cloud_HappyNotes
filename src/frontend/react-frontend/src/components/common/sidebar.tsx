@@ -7,7 +7,11 @@ import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
 import { useUser } from '@/contexts/UserContext';
 import { toast } from 'react-toastify';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isSidebarOpen: boolean; // 新增 isSidebarOpen prop
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { currentUser, setCurrentUser } = useUser();
@@ -63,20 +67,13 @@ const Sidebar: React.FC = () => {
       {/* Sidebar container */}
       <div className="relative">
         {/* Sidebar toggle button */}
-        <button
-          type="button"
-          title="Toggle Sidebar"
-          onClick={toggleSidebar}
-          className="mt-5 p-3 absolute top-4 left-4 z-50 bg-[#A15C38] text-white rounded hover:bg-[#8B4C34] transition-colors duration-200"
-        >
-          <FaBars size={24} />
-        </button>
+
       </div>
 
       {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-full bg-[#F7F1F0] text-[#262220] transform transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{ width: "300px", zIndex: 40 }}
       >
