@@ -304,8 +304,8 @@ const Map: React.FC = () => {
                 <div
                     className="overflow-auto bg-[#C3A6A0] relative w-full h-full"
                     style={{ 
-                        width: '2000px', 
-                        height: '2000px',
+                        width: '10000px', 
+                        height: '10000px',
                         transform: `scale(${zoomLevel})`,
                         transformOrigin: '0 0',
                     }}

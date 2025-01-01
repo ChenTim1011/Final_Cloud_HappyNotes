@@ -15,14 +15,16 @@ export interface CardData {
     width: number;
     height: number;
   };
-  connection?: Array<{ 
-    toNoteId: string; 
-    position: number; // 0 (Up), 1 (Right), 2 (Down), 3 (Left)
+  connections?: Array<{
+    id: string;
+    //startDirection: 'top' | 'bottom' | 'left' | 'right';
+    startCardId: string;
+    startOffset: { x: number; y: number };
+    endPoint: {
+      x: number;
+      y: number;
+    };
   }>;
-  connectionBy?: Array<{
-    toNoteId: string; 
-    position: number; // 0 (Up), 1 (Right), 2 (Down), 3 (Left)
-}>;
   comments?: Array<{ 
     commentId: string; 
     userId: string; 

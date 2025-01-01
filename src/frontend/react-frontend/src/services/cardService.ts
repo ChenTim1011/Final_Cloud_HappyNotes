@@ -9,6 +9,100 @@ interface PatchCardUpdate {
     changes: Partial<CardData>;
 }
 
+
+
+
+export const updateConnection = async (
+    cardId: string, 
+    connectionId: string, 
+    updates: {
+        startOffset?: { x: number; y: number };
+        endPoint?: { x: number; y: number };
+    }
+): Promise<void> => {
+    const url = `${API_BASE_URL}/${cardId}/connections/${connectionId}`;
+    try {
+        console.log('Sending PATCH request:', { cardId, connectionId, updates });
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updates),
+        });
+
+        if (!response.ok) {
+            await handleRequestError(response, 'Failed to update connection');
+        }
+
+        console.log('Connection updated successfully');
+    } catch (error) {
+        console.error('Error updating connection:', error);
+        throw error;
+    }
+};
+
+
+
+
+export const deleteConnection = async (cardId: string, connectionId: string): Promise<void> => {
+    console.log('Sending DELETE request:', { cardId , connectionId});
+    const url = `${API_BASE_URL}/${cardId}/${connectionId}`;
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (!response.ok) {
+        console.error(`Failed to delete connection with ID: ${connectionId}`);
+        throw new Error('Failed to delete connection');
+      }
+  
+      console.log(`Connection ${connectionId} deleted successfully.`);
+    } catch (error) {
+      console.error('Error deleting connection:', error);
+      throw error;
+    }
+  };
+
+export const addConnection = async (cardId: string, newConnection: { 
+    id: string; 
+    startOffset: { x: number; y: number }
+    endPoint: { x: number; y: number };
+}): Promise<void> => {
+    //const card = await fetch(`${API_BASE_URL}/${cardId}`);
+    //const cardData = await card.json();
+    //const updatedConnections = [...(cardData.connections || []), newConnection];
+    const url = `${API_BASE_URL}/${cardId}/connections`;
+
+    // 打印 URL 和數據
+    //console.log("PPPP");
+    console.log("Sending request to:", url);
+    console.log("Request body:", newConnection);
+    try {
+        const response = await fetch(`${API_BASE_URL}/${cardId}/connections`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ connections: [newConnection] }),
+            //body: JSON.stringify({ connections: updatedConnections }),
+        });
+        console.log("RRResponse", response);
+
+        if (!response.ok) {
+            await handleRequestError(response, 'Failed to add connection');
+        }
+    } catch (error) {
+        console.error('Error adding connection:', error);
+        throw error;
+    }
+};
+
+
 const handleRequestError = async (response: Response, defaultMessage: string) => {
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
