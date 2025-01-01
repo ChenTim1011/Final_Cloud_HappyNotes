@@ -95,29 +95,69 @@ const generateRefreshToken = (userName) => {
 const GEN_TOKEN = async (req, res) => {
   const { userName, password } = req.body;
 
-  // Authenticate user (assuming user is found in the database)
   try {
     // Find user in the database
     const user = await User.findOne({ userName });
     if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ error: "帳號或密碼錯誤，請重新輸入" });
+    }
+
+    // Check if the user is locked
+    if (user.isLocked) {
+      const unlockTime = user.lockUntil;
+      const currentTime = Date.now();
+      if (currentTime < unlockTime) {
+        const remaining = Math.ceil((unlockTime - currentTime) / 60000); // Remaining time in minutes
+        return res
+          .status(423)
+          .json({ error: `帳號已被鎖定，請於 ${remaining} 分鐘後再試。` });
+      } else {
+        // Unlock the user account
+        user.failedLoginAttempts = 0;
+        user.lockUntil = null;
+        await user.save();
+      }
     }
 
     // Compare the password with the hashed password in the database
     const isMatch = await bcrypt.compare(password, user.userPassword);
     if (!isMatch) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      // Increment failed login attempts
+      user.failedLoginAttempts += 1;
+
+      if (user.failedLoginAttempts >= 5) {
+        // Lock the user account for 10 minutes after 5 failed attempts
+        user.lockUntil = Date.now() + 10 * 60 * 1000;
+        await user.save();
+        return res.status(423).json({
+          error: "帳號已被鎖定，請於10分鐘後再試。",
+        });
+      } else {
+        await user.save();
+        return res.status(401).json({ error: "帳號或密碼錯誤，請重新輸入" });
+      }
     }
+
+    // Reset failed login attempts and lockUntil
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    await user.save();
 
     // Authentication successful, generate access token and refresh token
     const accessToken = generateAccessToken(userName);
     const refreshToken = generateRefreshToken(userName);
 
     console.log(accessToken, "\n", refreshToken);
-    // Authentication successful, return user data
-    return res.json([user, accessToken, refreshToken]);
+
+    // Authentication successful, return user data as an object
+    return res.json({
+      user,
+      accessToken,
+      refreshToken,
+    });
   } catch (error) {
-    return res.status(500).json({ error: "Error during authentication" });
+    console.error("Error during authentication:", error);
+    return res.status(500).json({ error: "伺服器錯誤，請稍後再試。" });
   }
 };
 

@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.NODE_ENV === "production" ? "/api/auth" : "http
 export const authenticateUser = async (
     userName: string | null, 
     password: string | null
-): Promise<[UserData, string, string]>  => {
+): Promise<{ user: UserData; accessToken: string; refreshToken: string }>  => {
     const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: {
@@ -17,12 +17,15 @@ export const authenticateUser = async (
         credentials: "include",
     });
 
-    if (!response.ok) {
-        throw new Error("Invalid username or password");
-    }
-
     const data = await response.json();
-    return data;
+
+    if (!response.ok) {
+        const error = new Error(data.error || '登入失敗');
+        (error as any).response = { data };
+        throw error;
+      }
+      
+      return data;
 }
 
 // POST /api/auth/refresh - Refresh the access token using the provided refresh token
