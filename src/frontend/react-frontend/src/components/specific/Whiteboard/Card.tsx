@@ -807,11 +807,11 @@ const Card: React.FC<CardProps> = React.memo(({
           if (!isFullscreen) { // Only handle drag stop if not fullscreen
             console.log("d.x,d.y", d);
             const newPosition = { x: d.x, y: d.y };
-            // handleResize({ width: localDimensions.width, height: localDimensions.height }, newPosition);
+            handleResize({ width: localDimensions.width, height: localDimensions.height }, newPosition);
             setCards(prevCards => {
               return prevCards.map(card => {
                 if (card._id === _id) {
-                  return { ...card, position: newPosition,dimensions:localDimensions }; // 同步父層狀態
+                  return { ...card, position: newPosition, dimensions: localDimensions }; // 同步父層狀態
                 }
                 return card;
               });
@@ -819,7 +819,7 @@ const Card: React.FC<CardProps> = React.memo(({
             setLocalPosition(newPosition);
             // 通知父元件  卡片位置更新
             onPositionChange?.(_id, newPosition);
-            //handleResize({ width: localDimensions.width, height: localDimensions.height }, { x: d.x, y: d.y });
+            handleResize({ width: localDimensions.width, height: localDimensions.height }, { x: d.x, y: d.y });
           }
           //handleSave()
         }}
@@ -893,8 +893,10 @@ const Card: React.FC<CardProps> = React.memo(({
           ref={cardRef}
           style={{ boxSizing: 'border-box', overflow: 'visible' }}
         >
+
           {/* Header with fixed buttons and title */}
-          <div className="header flex-none">
+          <div className="header flex-none ">
+          {localDimensions.height > 80 && (
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-3">
                 {!isFullscreen && (
@@ -909,51 +911,58 @@ const Card: React.FC<CardProps> = React.memo(({
                     </button>
 
                     {/* Copy button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCopyCard({
-                          _id,
-                          cardTitle,
-                          content,
-                          dueDate,
-                          tag,
-                          foldOrNot,
-                          position,
-                          dimensions,
-                          comments,
-                          createdAt: new Date(),
-                          updatedAt: new Date(),
-                        });
-                      }}
-                      className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
-                      title="複製卡片"
-                    >
-                      📄
-                    </button>
+                    {localDimensions.width > 120 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCopyCard({
+                            _id,
+                            cardTitle,
+                            content,
+                            dueDate,
+                            tag,
+                            foldOrNot,
+                            position,
+                            dimensions,
+                            comments,
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                          });
+                        }}
+                        className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
+                        title="複製卡片"
+                      >
+                        📄
+                      </button>
+                    )}
                   </>
                 )}
 
                 {/* Fullscreen button */}
-                <button
-                  onClick={toggleFullscreen}
-                  className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
-                  title="全螢幕"
-                >
-                  {isFullscreen ? '離開全螢幕' : '🖥️'}
-                </button>
+                {localDimensions.width > 120 && (
+                  <button
+                    onClick={toggleFullscreen}
+                    className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
+                    title="全螢幕"
+                  >
+                    {isFullscreen ? '離開全螢幕' : '🖥️'}
+                  </button>
+                )}
               </div>
 
-              {/* Delete button */}
-              <button
-                onClick={handleDelete}
-                className="text-red-500 hover:text-red-700 focus:outline-none text-xl"
-                title="刪除卡片"
-              >
-                🗑️
-              </button>
-            </div>
 
+              {/* Delete button */}
+              {localDimensions.width > 120 && (
+                <button
+                  onClick={handleDelete}
+                  className="text-red-500 hover:text-red-700 focus:outline-none text-xl"
+                  title="刪除卡片"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
+)}
             {isSelected && (
               <>
                 {/* 上方圓點 */}
@@ -1019,9 +1028,11 @@ const Card: React.FC<CardProps> = React.memo(({
               </>
             )}
             {/* Tag Component */}
+            { (isFullscreen || localDimensions.width > 200) &&(
             <div className="mb-4">
               <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
             </div>
+            )}
 
             {/* Header with title and save button */}
             {isEditing && (
@@ -1061,7 +1072,8 @@ const Card: React.FC<CardProps> = React.memo(({
               <div className="flex flex-col">
                 <h3
                   ref={titleRef}
-                  className="text-xl font-serif font-bold text-[#262220] mt-2"
+                  className="text-xl font-serif font-bold text-[#262220] mt-2 fixed top-0 left-0 w-full bg-[#F7F1F0] z-10"
+                  style={{ padding: '8px', borderBottom: '0.5px solid #C3A6A0' }}
                 >
                   {cardTitle}
                 </h3>
