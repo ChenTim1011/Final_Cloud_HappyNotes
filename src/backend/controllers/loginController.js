@@ -9,19 +9,33 @@ const path = require("path");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
 
-// Initialize dotenv
-dotenv.config();
+// Function to dynamically load environment variables
+const loadEnvConfig = () => {
+  const NODE_ENV = process.env.NODE_ENV || "development"; // Default to development
+  const envFile = NODE_ENV === "production" ? ".env.production" : ".env";
+
+  dotenv.config({
+    path: path.resolve(__dirname, "../", envFile),
+  });
+
+  console.log(`Loaded environment variables from ${envFile}`);
+};
+
+// Load environment variables
+loadEnvConfig();
 
 // Define verificationCodes as an in-memory store
 const verificationCodes = {};
 
 // Generate JWT_SECRET & JWT_REFRESH_SECRET
 const checkAndGenerateEnv = () => {
-  const envPath = path.resolve(__dirname, "../.env");
+  const NODE_ENV = process.env.NODE_ENV || "development";
+  const envFile = NODE_ENV === "production" ? ".env.production" : ".env";
+  const envPath = path.resolve(__dirname, "../", envFile);
 
   // If .env file does not exist, create a new one
   if (!fs.existsSync(envPath)) {
-    console.log(".env file does not exist, creating a new one...");
+    console.log(`${envFile} file does not exist, creating a new one...`);
     fs.writeFileSync(envPath, "", "utf8");
   }
 
@@ -50,12 +64,13 @@ const checkAndGenerateEnv = () => {
     // Write the updated content to the .env file
     fs.writeFileSync(envPath, newEnvContent.trim(), "utf8");
     console.log(
-      "JWT_SECRET and JWT_REFRESH_SECRET have been generated and added to the .env file"
+      `JWT_SECRET and JWT_REFRESH_SECRET have been generated and added to ${envFile}`
     );
-    dotenv.config();
+
+    dotenv.config({ path: envPath });
   } else {
     console.log(
-      "JWT_SECRET and JWT_REFRESH_SECRET already exist in the .env file"
+      `JWT_SECRET and JWT_REFRESH_SECRET already exist in ${envFile}`
     );
   }
 };
@@ -159,7 +174,6 @@ const VALIDATE_TOKEN = (req, res) => {
 // /api/auth/send-verification-code
 // API to send verification code
 const SEND_VERIFICATION_CODE = async (req, res) => {
-  dotenv.config();
   const { userName, email } = req.body;
 
   if (!userName) {

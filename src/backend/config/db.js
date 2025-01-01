@@ -23,7 +23,8 @@ if (NODE_ENV === "production") {
 
   options = {
     tls: true,
-    ca: ca,
+    tlsCAFile: process.env.DB_SSL_CA,
+    authMechanism: "SCRAM-SHA-1",
   };
 } else {
   // Local MongoDB
