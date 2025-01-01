@@ -4,7 +4,11 @@ import React from 'react';
 import { CardData } from '@/interfaces/Card/CardData';
 import { Input } from '@/components/ui/input';
 import QuillEditor from '@/components/specific/Card/text-editor/quilleditor';
+import { toast } from 'react-toastify';
 import DOMPurify from 'dompurify'; 
+
+
+const MAX_CONTENT_LENGTH = 5000;
 
 interface FullscreenEditProps {
     card: CardData;
@@ -16,6 +20,10 @@ interface FullscreenEditProps {
 const FullscreenEdit: React.FC<FullscreenEditProps> = ({ card, onChange, onSave, onCancel }) => {
    
     const handleContentChange = (content: string) => {
+        if (content.length > MAX_CONTENT_LENGTH) {
+            toast.error(`內容不能超過 ${MAX_CONTENT_LENGTH} 個字元`);
+            return;
+        }
         const sanitized = DOMPurify.sanitize(content);
         onChange({ content: sanitized });
     };
@@ -38,7 +46,14 @@ const FullscreenEdit: React.FC<FullscreenEditProps> = ({ card, onChange, onSave,
                 {/* Title Input */}
                 <Input
                     value={card.cardTitle}
-                    onChange={(e) => onChange({ cardTitle: e.target.value })}
+                    onChange={(e) => {
+                        if (e.target.value.length <= 50) {
+                            onChange({ cardTitle: e.target.value });
+                        } else {
+                            toast.error('標題不能超過 50 個字元');
+                        }
+                    }}
+                    maxLength={50} 
                     className="text-2xl font-serif font-medium text-[#262220] border border-[#C3A6A0] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#A15C38] w-full"
                     placeholder="卡片標題"
                 />

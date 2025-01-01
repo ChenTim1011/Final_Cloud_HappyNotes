@@ -48,7 +48,7 @@ const Login: React.FC = () => {
       };
 
       try {
-        // 修改解構方式
+       
         const { user: auth, accessToken, refreshToken } = await authenticateUser(userName, userPassword);
         await updateUser(users[0]._id, updatedUser);
 
@@ -64,12 +64,21 @@ const Login: React.FC = () => {
       } catch (error: any) {
         console.log(error);
         if (error.response && error.response.data) {
-          const { error: errorMessage } = error.response.data;
+          const { error: errorMessage, failedLoginAttempts } = error.response.data;
 
           if (errorMessage.startsWith("帳號已被鎖定")) {
             toast.error(<div>{errorMessage}</div>);
           } else if (errorMessage === "帳號或密碼錯誤，請重新輸入") {
-            toast.error(<div>帳號或密碼錯誤，請重新輸入</div>);
+            if (failedLoginAttempts !== undefined) {
+              const remainingAttempts = 5 - failedLoginAttempts;
+              toast.error(
+                <div>
+                  帳號或密碼錯誤，您已經錯誤 {failedLoginAttempts} 次。再錯誤 {remainingAttempts} 次後帳號將被鎖定10分鐘。
+                </div>,
+              );
+            } else {
+              toast.error(<div>帳號或密碼錯誤，請重新輸入</div>);
+            }
           } else {
             toast.error(<div>未知錯誤，請稍後再試</div>);
           }
@@ -81,6 +90,7 @@ const Login: React.FC = () => {
           );
         }
       }
+
 
     } catch(error) {
       if (error instanceof Error) {

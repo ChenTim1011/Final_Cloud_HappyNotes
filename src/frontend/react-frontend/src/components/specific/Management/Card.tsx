@@ -22,8 +22,6 @@ const Card: React.FC<CardProps> = React.memo(({
     dueDate,
     tag,
     foldOrNot,
-    connection,
-    connectionBy,
     comments,
     onDelete,
     isSelected,
