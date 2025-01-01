@@ -99,7 +99,9 @@ const GEN_TOKEN = async (req, res) => {
     // Find user in the database
     const user = await User.findOne({ userName });
     if (!user) {
-      return res.status(401).json({ error: "帳號或密碼錯誤，請重新輸入" });
+      return res
+        .status(401)
+        .json({ error: "帳號或密碼錯誤，請重新輸入", failedLoginAttempts: 0 });
     }
 
     // Check if the user is locked
@@ -114,6 +116,7 @@ const GEN_TOKEN = async (req, res) => {
       } else {
         // Unlock the user account
         user.failedLoginAttempts = 0;
+        user.isLocked = false;
         user.lockUntil = null;
         await user.save();
       }
@@ -131,15 +134,20 @@ const GEN_TOKEN = async (req, res) => {
         await user.save();
         return res.status(423).json({
           error: "帳號已被鎖定，請於10分鐘後再試。",
+          failedLoginAttempts: user.failedLoginAttempts,
         });
       } else {
         await user.save();
-        return res.status(401).json({ error: "帳號或密碼錯誤，請重新輸入" });
+        return res.status(401).json({
+          error: "帳號或密碼錯誤，請重新輸入",
+          failedLoginAttempts: user.failedLoginAttempts,
+        });
       }
     }
 
     // Reset failed login attempts and lockUntil
     user.failedLoginAttempts = 0;
+    user.isLocked = false;
     user.lockUntil = null;
     await user.save();
 

@@ -251,7 +251,7 @@ const Card: React.FC<CardProps> = React.memo(({
     };
 
     const handleMouseUp = async (e: MouseEvent) => {
-      console.log("draggingConnectionRef:", draggingConnectionRef.current);
+      
       if (draggingConnectionRef.current) {
         const { connectionId, type } = draggingConnectionRef.current;
         const updatedConnection = localConnections.find((conn) => conn.id === connectionId);
