@@ -109,13 +109,8 @@ const Map: React.FC = () => {
             setContextMenu(null);
             setIsAdding(false);
 
-            // Update user whiteboards
             const updatedUser: UserUpdateData = {
-                userName: users[0].userName,
-                userPassword: users[0].userPassword,
-                email: users[0].email,
-                isLoggedin: users[0].isLoggedin,
-                whiteboards: updatedWhiteboards.map(wb => wb._id), 
+                whiteboards: updatedWhiteboards,
             };
             
             try {
@@ -141,11 +136,7 @@ const Map: React.FC = () => {
                 setWhiteboards(updatedWhiteboards);
                 
                 const updatedUser: UserUpdateData = {
-                    userName: users[0].userName,
-                    userPassword: users[0].userPassword,
-                    email: users[0].email,
-                    isLoggedin: users[0].isLoggedin,
-                    whiteboards: updatedWhiteboards.map(wb => wb._id), 
+                    whiteboards: updatedWhiteboards,
                 };
         
                 try {

@@ -16,23 +16,19 @@ const Sidebar: React.FC = () => {
     setIsOpen(!isOpen);
   };
 
-  const logout = async() => {
-    if (!currentUser) return;
-
+  const logout = async() =>{
+    setCurrentUser(null);
     const updatedUser: UserUpdateData = {
-      userName: currentUser.userName,
-      userPassword: currentUser.userPassword,
-      email: currentUser.email,
-      isLoggedin: false,
-      whiteboards: currentUser.whiteboards,
+        isLoggedin: false,
     };
     
 
     try {
-      await updateUser(currentUser._id, updatedUser);
-      setCurrentUser(null);
-      toast.success('登出成功！');
-      navigate('/auth/login');
+        if (currentUser) {
+          await updateUser(currentUser._id, updatedUser);
+        }
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
     } catch (err: any) {
       console.error('Failed to log out:', err);
       toast.error('登出失敗，請稍後再試');

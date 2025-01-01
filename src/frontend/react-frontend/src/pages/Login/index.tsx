@@ -27,6 +27,17 @@ const Login: React.FC = () => {
                   if (input === null || !/^[\u4e00-\u9fa5a-zA-Z0-9]+$/.test(input)) {
                       throw new Error(`帳號或密碼錯誤，請重新輸入`);
                   }
+              } else if (fieldName === "密碼") {
+                  // Check if password meets requirements
+                  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+                  if (input === null || !passwordRegex.test(input)) {
+                      toast.error(
+                          <div>
+                              {fieldName}必須包含大小寫英文、數字，且長度至少為8個字元
+                          </div>,
+                      );
+                      throw new Error(`${fieldName}必須包含大小寫英文、數字，且長度至少為8個字元`);
+                  }
               }
           };
 
@@ -40,39 +51,29 @@ const Login: React.FC = () => {
 
           const users = await getUserByName(userName);
 
-          const updateduser: UserUpdateData = {
-              userName: users[0].userName,
-              userPassword: users[0].userPassword,
-              email: users[0].email,
+          const updatedUser: UserUpdateData = {
               isLoggedin: true,
-              whiteboards: users[0].whiteboards,
           };
 
-      try {
-        const auth = await authenticateUser(userName, userPassword);
-        await updateUser(users[0]._id, updateduser);
-        
-        // Set the current user in context
-        setCurrentUser({
-          _id: users[0]._id,
-          userName: users[0].userName,
-          userPassword: users[0].userPassword,
-          email: users[0].email,
-          isLoggedin: true,
-          whiteboards: users[0].whiteboards,
-          activityLog: users[0].activityLog || [], // Add activity log with default empty array
-          tags: users[0].tags || [], // Add tags with default empty array
-        });
+          try {
+            const [auth, accessToken, refreshToken] = await authenticateUser(userName, userPassword);
+            await updateUser(users[0]._id,updatedUser);
+            
+            // store tokens
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
 
-        toast.success('登入成功！');
-        navigate(`../../map/${auth.userName}`);
-      } catch (error) {
-        toast.error(
-          <div>
-            帳號或密碼錯誤，請重新輸入
-          </div>
-        );
-      }
+            toast.success('登入成功！');
+            navigate(`../../map/${auth.userName}`);
+          } catch (error) {
+
+            console.log(error);
+            toast.error(
+                <div>
+                    帳號或密碼錯誤，請重新輸入
+                </div>,
+            );
+          }
 
       } catch(error) {
           // Catch errors and output the error message
