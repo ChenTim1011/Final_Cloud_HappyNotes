@@ -21,7 +21,6 @@ const ResetPassword: React.FC = () => {
 
     const [showVerification, setShowVerification] = useState(false);
     const [currentUser, setcurrentUser] = useState<UserData | null>(null);
-    const [verificationCode, setVerificationCode] = useState<string | undefined>("");
 
     // State to track password values and their validity
     const [password, setPassword] = useState("");
@@ -126,7 +125,7 @@ const ResetPassword: React.FC = () => {
 
             const response = await sendVerificationCode(userName, currentEmail);
 
-            setVerificationCode(response.verificationCode);
+           
             setShowVerification(true);
 
             // Show success toast with bold email
@@ -158,32 +157,56 @@ const ResetPassword: React.FC = () => {
     
     const handleVerificationSubmit = async (code: string) => {
         try {
-        
-            if (code !== verificationCode) {
-                toast.error('驗證碼錯誤');
-                return;
+            if (!currentUser) {
+                throw new Error("沒有找到當前用戶資料");
             }
     
-            const userName = userNameRef.current?.value || '';
-            const userPassword = password || '';
-            const inputEmail = emailRef.current?.value || currentUser!.email;
+            const userName = userNameRef.current?.value || currentUser.userName;
+            const inputEmail = emailRef.current?.value || currentUser.email;
     
-            // Hash the password
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(userPassword, salt);
-            
-            const updatedUser: UserUpdateData = {
+            // Call the verifyCode function to verify the code
+            const verifyResponse = await verifyCode(
                 userName,
-                userPassword: hashedPassword,
-                email: inputEmail,
-                isLoggedin: false,
-            };
+                inputEmail,
+                code
+            );
     
-            await updateUser(currentUser!._id, updatedUser);
-            toast.success('更新成功');
-            navigate('../../auth/login');
+            if (verifyResponse.message === "驗證成功") {
+                // Hash the password
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(password, salt);
+                
+                // Update user data
+                const updatedUser: UserUpdateData = {
+                    userName: userName,
+                    userPassword: hashedPassword,
+                    email: inputEmail,
+                    isLoggedin: false,
+                };
+    
+                // Update user data in the database
+                await updateUser(currentUser._id, updatedUser);
+                toast.success('更新成功');
+                navigate('../../auth/login');
+            } else {
+                toast.error('驗證失敗，請確認驗證碼。');
+            }
         } catch (error) {
-            toast.error('更新失敗');
+            if (error instanceof Error) {
+                console.error("驗證失敗", error.message);
+                toast.error(
+                    <div>
+                        驗證失敗。{error.message}
+                    </div>,
+                );
+            } else {
+                console.error("發生未知錯誤");
+                toast.error(
+                    <div>
+                        發生未知錯誤。
+                    </div>,
+                );
+            }
         } finally {
             setShowVerification(false);
         }
@@ -235,14 +258,13 @@ const ResetPassword: React.FC = () => {
                         >
                             帳號
                         </label>
-                        <input
-                            ref={userNameRef}
-                            id="userName"
-                            className="w-full px-5 py-3 border border-[#C3A6A0] rounded-md text-base focus:outline-none bg-gray-200 cursor-not-allowed"
-                            placeholder="帳號無法修改"
-                            required
-                            readOnly
-                        />
+                    <input
+                        ref={userNameRef}
+                        id="userName"
+                        className="w-full px-5 py-3 border border-[#C3A6A0] rounded-md text-base focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
+                        placeholder="輸入您的帳號"
+                        required
+                    />
                     </div>
                     <div className="mb-6">
                         <label

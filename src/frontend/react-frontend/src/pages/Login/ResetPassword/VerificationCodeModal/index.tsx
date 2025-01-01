@@ -1,32 +1,33 @@
 // src/pages/Login/ResetPassword/VerificationCodeModal.tsx - VerificationCode
 
-import React, { useRef} from "react";
+import React, { useState } from "react";
 import { toast } from 'react-toastify';
 
 const VerificationCodeModal: React.FC<{
   onClose: () => void;
   onSubmit: (code: string) => void;
 }> = ({ onClose, onSubmit }) => {
-  const codeRef = useRef<HTMLInputElement | null>(null);
+  const [code, setCode] = useState("");
+  
 
   const handleConfirm = () => {
-    const code = codeRef.current?.value || '';
-    if (!code) {
+    if (!code.trim()) {
       toast.error('請輸入驗證碼');
       return;
     }
-    onSubmit(code);
+    onSubmit(code.trim());
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="w-[28rem] bg-white rounded-lg shadow-lg p-10">
         <h2 className="text-2xl font-semibold text-center text-[#262220] mb-8">
           輸入驗證碼
         </h2>
         <input
-          ref={codeRef}
           type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
           placeholder="輸入驗證碼"
           className="w-full px-5 py-3 border border-[#C3A6A0] rounded-md text-base focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
         />

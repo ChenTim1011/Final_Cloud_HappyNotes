@@ -1,31 +1,42 @@
 // src/pages/Login/Register.tsx - Register
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createUser, getUserByName } from '@/services/userService';
 import { CreateUserData } from '@/interfaces/User/CreateUserData';
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import bcrypt from 'bcryptjs';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import VerificationCodeModal from '@/pages/Login/ResetPassword/VerificationCodeModal'; // 確保路徑正確
+import { sendVerificationCode, verifyCode } from '@/services/loginService'; // 匯入驗證函式
 
 const Register: React.FC = () => {
-    const userNameRef = useRef<HTMLInputElement | null>(null);
-    const userPasswordRef = useRef<HTMLInputElement | null>(null);
-    const userPasswordAgainRef = useRef<HTMLInputElement | null>(null);
-    const emailRef = useRef<HTMLInputElement | null>(null);
-
-    // Use the useNavigate hook to handle page navigation
-    const navigate = useNavigate();    
-
-    // State to track password values and their validity
+    // State to manage form inputs
+    const [userName, setUserName] = useState("");
     const [password, setPassword] = useState("");
     const [passwordAgain, setPasswordAgain] = useState("");
+    const [email, setEmail] = useState("");
+
+    // State to track password validity
     const [passwordValid, setPasswordValid] = useState({
         length: false,
         uppercase: false,
         lowercase: false,
         number: false,
     });
+
+    // State to track if passwords match
+    const [isPasswordMatch, setIsPasswordMatch] = useState<boolean>(false);
+
+    // State to handle verification modal
+    const [showVerification, setShowVerification] = useState(false);
+    
+
+    // Temporary state to hold user data until verification
+    const [tempUserData, setTempUserData] = useState<CreateUserData | null>(null);
+
+    // Use the useNavigate hook to handle page navigation
+    const navigate = useNavigate();    
 
     // Effect to validate password on change
     useEffect(() => {
@@ -34,7 +45,10 @@ const Register: React.FC = () => {
         const lowercase = /[a-z]/.test(password);
         const number = /\d/.test(password);
         setPasswordValid({ length, uppercase, lowercase, number });
-    }, [password]);
+
+        // Check if passwords match
+        setIsPasswordMatch(password !== "" && password === passwordAgain);
+    }, [password, passwordAgain]);
 
     const registerHandler = async () => {
         try {
@@ -75,16 +89,10 @@ const Register: React.FC = () => {
                 }
             };
 
-            // Get input values from refs
-            const userName = userNameRef.current?.value || null;
-            const userPassword = password || null;
-            const userPasswordConfirm = passwordAgain || null;
-            const email = emailRef.current?.value || null;
-
             // Validate each input
             validateInput(userName, "帳號");
-            validateInput(userPassword, "密碼");
-            validateInput(userPasswordConfirm, "密碼");
+            validateInput(password, "密碼");
+            validateInput(passwordAgain, "密碼");
             validateInput(email, "email");
 
             // Avoid Duplicated userName
@@ -95,33 +103,36 @@ const Register: React.FC = () => {
             }
 
             // Avoid inconsistent password
-            if(userPassword !== userPasswordConfirm){
+            if(password !== passwordAgain){
                 toast.error(`請確保兩次輸入的密碼相同。`);
                 throw new Error(`請確保兩次輸入的密碼相同。`);
             }
-            
-            // Hash the password
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(userPassword!, salt);
 
-            // If all validation passes, create new user
-            const newuser: CreateUserData = {
+            // Ensure password meets all conditions before sending verification code
+            const allValid = Object.values(passwordValid).every(Boolean);
+            if (!allValid) {
+                toast.error(`密碼不符合所有要求。`);
+                throw new Error(`密碼不符合所有要求。`);
+            }
+
+            // Prepare temporary user data
+            const newUserData: CreateUserData = {
                 userName: userName,
-                userPassword: hashedPassword,
+                userPassword: "", // Placeholder, will set after hashing
                 email: email,
             };
+            setTempUserData(newUserData);
 
-            try {
-                await createUser(newuser);
-                toast.success('註冊成功！');
-                navigate('../../auth/login')
-            } catch (error) {
-                if (error instanceof Error) {
-                    toast.error(`註冊失敗: ${error.message}`);
-                } else {
-                    toast.error('註冊失敗: 未知錯誤');
-                }
-            }
+            // Send verification code
+            const response = await sendVerificationCode(userName, email);
+            setShowVerification(true);
+
+            // Show success toast with bold email
+            toast.success(
+                <div>
+                    驗證碼已寄送到您的信箱 <strong>{email}</strong>。
+                </div>,
+            );
 
         } catch (error) {
             // Catch errors and output the error message
@@ -143,6 +154,59 @@ const Register: React.FC = () => {
         }
     };
 
+    const handleVerificationSubmit = async (code: string) => {
+        try {
+            if (!tempUserData) {
+                throw new Error("沒有暫存的用戶資料");
+            }
+
+            // Verify the code via API
+            const verifyResponse = await verifyCode(
+                tempUserData.userName,
+                tempUserData.email,
+                code
+            );
+
+            if (verifyResponse.message === "驗證成功") {
+                // Hash the password
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(password, salt);
+
+                // Update the temporary user data with hashed password
+                const finalUserData: CreateUserData = {
+                    ...tempUserData,
+                    userPassword: hashedPassword,
+                };
+
+                // Create the user
+                await createUser(finalUserData);
+                toast.success('註冊成功！');
+                navigate('../../auth/login');
+            } else {
+                toast.error('驗證失敗，請確認驗證碼。');
+            }
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error("驗證失敗", error.message);
+                toast.error(
+                    <div>
+                        驗證失敗。{error.message}
+                    </div>,
+                );
+            } else {
+                console.error("發生未知錯誤");
+                toast.error(
+                    <div>
+                        發生未知錯誤。
+                    </div>,
+                );
+            }
+        } finally {
+            setShowVerification(false);
+            setTempUserData(null);
+        }
+    };
+
     // Function to render password validation icon and text
     const renderValidation = (isValid: boolean, text: string) => {
         return (
@@ -161,7 +225,7 @@ const Register: React.FC = () => {
 
     return (
         <div className="flex items-center justify-center h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
-            <div className="w-[20rem] bg-white rounded-lg shadow-lg p-6">
+            <div className="w-[28rem] bg-white rounded-lg shadow-lg p-10 relative">
                 <h2 className="text-2xl font-semibold text-center text-[#262220] mb-6">
                     註冊
                 </h2>
@@ -180,7 +244,9 @@ const Register: React.FC = () => {
                             帳號
                         </label>
                         <input
-                            ref={userNameRef}
+                            type="text"
+                            value={userName}
+                            onChange={(e) => setUserName(e.target.value)}
                             id="userName"
                             className="w-full px-4 py-2 border border-[#C3A6A0] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
                             placeholder="輸入您的帳號"
@@ -227,16 +293,16 @@ const Register: React.FC = () => {
                             placeholder="再次輸入您的密碼"
                             required
                         />
-                        
+                        {/* Password Match Indicator */}
                         {passwordAgain && (
                             <div className="flex items-center mt-1">
-                                {password === passwordAgain ? (
+                                {isPasswordMatch ? (
                                     <FaCheckCircle className="text-green-500 mr-2" />
                                 ) : (
                                     <FaTimesCircle className="text-red-500 mr-2" />
                                 )}
-                                <span className={password === passwordAgain ? "text-green-500" : "text-red-500"}>
-                                    {password === passwordAgain ? "密碼一致" : "密碼不一致"}
+                                <span className={isPasswordMatch ? "text-green-500" : "text-red-500"}>
+                                    {isPasswordMatch ? "密碼一致" : "密碼不一致"}
                                 </span>
                             </div>
                         )}
@@ -250,7 +316,8 @@ const Register: React.FC = () => {
                         </label>
                         <input
                             type="email"
-                            ref={emailRef}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             id="email"
                             className="w-full px-4 py-2 border border-[#C3A6A0] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
                             placeholder="輸入您的 Email"
@@ -259,9 +326,14 @@ const Register: React.FC = () => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-2 text-sm rounded-lg transition-colors"
+                        className={`w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-2 text-sm rounded-lg transition-colors ${
+                            !Object.values(passwordValid).every(Boolean) || !isPasswordMatch
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                        }`}
+                        disabled={!Object.values(passwordValid).every(Boolean) || !isPasswordMatch}
                     >
-                        註冊
+                        送出
                     </button>
                 </form>
 
@@ -274,8 +346,16 @@ const Register: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {showVerification && tempUserData && (
+                <VerificationCodeModal
+                    onClose={() => setShowVerification(false)}
+                    onSubmit={handleVerificationSubmit}
+                />
+            )}
         </div>
     );
+
 };
 
 export default Register;

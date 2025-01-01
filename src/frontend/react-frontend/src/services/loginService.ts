@@ -74,7 +74,7 @@ export const validateToken = async (
 export const sendVerificationCode = async (
     userName: string | null,
     email: string | null
-): Promise<{ message: string; verificationCode?: string }> => {
+): Promise<{ message: string }> => {
     if (!userName || !email) {
         throw new Error("userName and email are required");
     }

@@ -1,21 +1,20 @@
 // src/pages/Login.tsx - Log in
 
-import React, {useRef} from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
 import { updateUser, getUserByName} from '@/services/userService';
 import { authenticateUser } from "@/services/loginService";
 import { toast } from 'react-toastify';
-import { useUser } from '@/contexts/UserContext';
+import { UserData } from '@/interfaces/User/UserData'; // 確保有 UserData 接口
 
 const Login: React.FC = () => {
-
   const userNameRef = useRef<HTMLInputElement | null>(null);
   const userPasswordRef = useRef<HTMLInputElement | null>(null);
 
   // Use the useNavigate hook to handle page navigation
   const navigate = useNavigate();
-  const { setCurrentUser } = useUser();
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null); // 本地狀態
 
   const login = async () =>{
       try {

@@ -1,3 +1,5 @@
+// controllers/authController.js
+
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -7,11 +9,17 @@ const path = require("path");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
 
+// Initialize dotenv
+dotenv.config();
+
+// Define verificationCodes as an in-memory store
+const verificationCodes = {};
+
 // Generate JWT_SECRET & JWT_REFRESH_SECRET
 const checkAndGenerateEnv = () => {
   const envPath = path.resolve(__dirname, "../.env");
 
-  // If .env file does not exist, create a new .env file
+  // If .env file does not exist, create a new one
   if (!fs.existsSync(envPath)) {
     console.log(".env file does not exist, creating a new one...");
     fs.writeFileSync(envPath, "", "utf8");
@@ -167,6 +175,9 @@ const SEND_VERIFICATION_CODE = async (req, res) => {
     100000 + Math.random() * 900000
   ).toString();
 
+  // Store the verification code associated with the userName
+  verificationCodes[userName] = verificationCode;
+
   // Use nodemailer to send the email
   const transporter = nodemailer.createTransport({
     service: "Gmail", // Change to your email service
@@ -186,10 +197,9 @@ const SEND_VERIFICATION_CODE = async (req, res) => {
   try {
     await transporter.sendMail(mailOptions);
 
-    // Send response to client with the verification code
+    // Send response to client without the verification code for security
     res.status(200).json({
       message: "驗證碼已發送",
-      verificationCode, // Include the verification code in the response (only for testing/demo purposes)
     });
   } catch (error) {
     console.error(error);
@@ -227,6 +237,22 @@ const AuthMiddleware = (req, res, next) => {
   });
 };
 
+// GET /api/auth/me - Get current user based on token
+const ME = async (req, res) => {
+  try {
+    const userName = req.user.userName;
+    const user = await User.findOne({ userName })
+      .populate("whiteboards")
+      .exec();
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user.toObject());
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+};
+
 module.exports = {
   GEN_TOKEN,
   REFRESH_TOKEN,
@@ -234,4 +260,5 @@ module.exports = {
   SEND_VERIFICATION_CODE,
   VERIFY_CODE,
   AuthMiddleware,
+  ME,
 };

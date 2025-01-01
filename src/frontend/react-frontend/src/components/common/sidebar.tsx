@@ -4,22 +4,27 @@ import { FaBars } from 'react-icons/fa';
 import { useNavigate } from "react-router-dom";
 import { updateUser } from '@/services/userService';
 import { UserUpdateData } from '@/interfaces/User/UserUpdateData';
-import { useUser } from '@/contexts/UserContext';
+import { UserData } from '@/interfaces/User/UserData';
 import { toast } from 'react-toastify';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  currentUser: UserData | null;
+  setCurrentUser: React.Dispatch<React.SetStateAction<UserData | null>>;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ currentUser, setCurrentUser }) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { currentUser, setCurrentUser } = useUser();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
 
-  const logout = async() =>{
-    setCurrentUser(null);
-    const updatedUser: UserUpdateData = {
-        isLoggedin: false,
+  const logout = async () => {
+    if (!currentUser) return;
+
+    const updatedUser: Partial<UserUpdateData> = {
+      isLoggedin: false,
     };
     
 
