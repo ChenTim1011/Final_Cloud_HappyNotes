@@ -20,24 +20,26 @@ const VerificationCodeModal: React.FC<{
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded shadow-lg">
-        <h2 className="text-lg font-semibold mb-4">請輸入驗證碼</h2>
+      <div className="w-[28rem] bg-white rounded-lg shadow-lg p-10">
+        <h2 className="text-2xl font-semibold text-center text-[#262220] mb-8">
+          輸入驗證碼
+        </h2>
         <input
           ref={codeRef}
           type="text"
           placeholder="輸入驗證碼"
-          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-full px-5 py-3 border border-[#C3A6A0] rounded-md text-base focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
         />
-        <div className="mt-4 flex justify-end space-x-4">
+        <div className="mt-8 flex justify-between">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            className="px-6 py-3 bg-gray-300 hover:bg-gray-400 text-[#262220] font-medium rounded-lg transition-colors"
           >
             取消
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-6 py-3 bg-[#A15C38] hover:bg-[#262220] text-white font-medium rounded-lg transition-colors"
           >
             確認
           </button>

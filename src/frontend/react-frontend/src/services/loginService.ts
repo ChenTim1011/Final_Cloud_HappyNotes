@@ -22,7 +22,6 @@ export const authenticateUser = async (
     }
 
     const data = await response.json();
-    // console.log("User NAME:", data.userName); // For debugging purposes
     return data;
 }
 

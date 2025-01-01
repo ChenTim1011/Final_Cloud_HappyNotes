@@ -1,11 +1,12 @@
 // src/pages/Login/Register.tsx - Register
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { createUser, getUserByName } from '@/services/userService';
 import { CreateUserData } from '@/interfaces/User/CreateUserData';
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import bcrypt from 'bcryptjs';
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 const Register: React.FC = () => {
     const userNameRef = useRef<HTMLInputElement | null>(null);
@@ -16,9 +17,27 @@ const Register: React.FC = () => {
     // Use the useNavigate hook to handle page navigation
     const navigate = useNavigate();    
 
-    const register = async () => {
-        try {
+    // State to track password values and their validity
+    const [password, setPassword] = useState("");
+    const [passwordAgain, setPasswordAgain] = useState("");
+    const [passwordValid, setPasswordValid] = useState({
+        length: false,
+        uppercase: false,
+        lowercase: false,
+        number: false,
+    });
 
+    // Effect to validate password on change
+    useEffect(() => {
+        const length = password.length >= 8;
+        const uppercase = /[A-Z]/.test(password);
+        const lowercase = /[a-z]/.test(password);
+        const number = /\d/.test(password);
+        setPasswordValid({ length, uppercase, lowercase, number });
+    }, [password]);
+
+    const registerHandler = async () => {
+        try {
             // Validation function: allows only Chinese characters, English letters, and numbers
             const validateInput = (input: string | null, fieldName: string) => {
                 if (fieldName === "帳號") {
@@ -42,19 +61,30 @@ const Register: React.FC = () => {
                         );
                         throw new Error(`${fieldName}必須包含大小寫英文、數字，且長度至少為8個字元`);
                     }
+                } else if (fieldName === "email") {
+                    // Basic email validation
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (input === null || input === "" || !emailRegex.test(input)) {
+                        toast.error(
+                            <div>
+                                {fieldName}格式不正確
+                            </div>,
+                        );
+                        throw new Error(`${fieldName}格式不正確`);
+                    }
                 }
             };
 
             // Get input values from refs
             const userName = userNameRef.current?.value || null;
-            const userPassword = userPasswordRef.current?.value || null;
-            const userPasswordAgain = userPasswordAgainRef.current?.value || null;
+            const userPassword = password || null;
+            const userPasswordConfirm = passwordAgain || null;
             const email = emailRef.current?.value || null;
 
             // Validate each input
             validateInput(userName, "帳號");
             validateInput(userPassword, "密碼");
-            validateInput(userPasswordAgain, "密碼");
+            validateInput(userPasswordConfirm, "密碼");
             validateInput(email, "email");
 
             // Avoid Duplicated userName
@@ -64,8 +94,8 @@ const Register: React.FC = () => {
                 throw new Error(`此用戶已存在`);
             }
 
-            // Avoid incosistent password
-            if(userPassword !== userPasswordAgain){
+            // Avoid inconsistent password
+            if(userPassword !== userPasswordConfirm){
                 toast.error(`請確保兩次輸入的密碼相同。`);
                 throw new Error(`請確保兩次輸入的密碼相同。`);
             }
@@ -99,7 +129,7 @@ const Register: React.FC = () => {
                 console.error("註冊失敗", error.message);
                 toast.error(
                     <div>
-                        註冊失敗。
+                        註冊失敗。{error.message}
                     </div>,
                 );
             } else {
@@ -113,6 +143,22 @@ const Register: React.FC = () => {
         }
     };
 
+    // Function to render password validation icon and text
+    const renderValidation = (isValid: boolean, text: string) => {
+        return (
+            <div className="flex items-center mb-1">
+                {isValid ? (
+                    <FaCheckCircle className="text-green-500 mr-2" />
+                ) : (
+                    <FaTimesCircle className="text-red-500 mr-2" />
+                )}
+                <span className={isValid ? "text-green-500" : "text-red-500"}>
+                    {text}
+                </span>
+            </div>
+        );
+    };
+
     return (
         <div className="flex items-center justify-center h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
             <div className="w-[20rem] bg-white rounded-lg shadow-lg p-6">
@@ -123,7 +169,7 @@ const Register: React.FC = () => {
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
-                        register();
+                        registerHandler();
                     }}
                 >
                     <div className="mb-4">
@@ -150,12 +196,20 @@ const Register: React.FC = () => {
                         </label>
                         <input
                             type="password"
-                            ref={userPasswordRef}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             id="password"
                             className="w-full px-4 py-2 border border-[#C3A6A0] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
                             placeholder="輸入您的密碼"
                             required
                         />
+                        {/* Password Validation Indicators */}
+                        <div className="mt-2">
+                            {renderValidation(passwordValid.length, "至少8個字元")}
+                            {renderValidation(passwordValid.uppercase, "至少一個大寫字母")}
+                            {renderValidation(passwordValid.lowercase, "至少一個小寫字母")}
+                            {renderValidation(passwordValid.number, "至少一個數字")}
+                        </div>
                     </div>
                     <div className="mb-4">
                         <label
@@ -166,12 +220,26 @@ const Register: React.FC = () => {
                         </label>
                         <input
                             type="password"
-                            ref={userPasswordAgainRef}
+                            value={passwordAgain}
+                            onChange={(e) => setPasswordAgain(e.target.value)}
                             id="repassword"
                             className="w-full px-4 py-2 border border-[#C3A6A0] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
                             placeholder="再次輸入您的密碼"
                             required
                         />
+                        
+                        {passwordAgain && (
+                            <div className="flex items-center mt-1">
+                                {password === passwordAgain ? (
+                                    <FaCheckCircle className="text-green-500 mr-2" />
+                                ) : (
+                                    <FaTimesCircle className="text-red-500 mr-2" />
+                                )}
+                                <span className={password === passwordAgain ? "text-green-500" : "text-red-500"}>
+                                    {password === passwordAgain ? "密碼一致" : "密碼不一致"}
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <div className="mb-4">
                         <label
