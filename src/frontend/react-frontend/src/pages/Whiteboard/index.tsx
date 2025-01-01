@@ -71,7 +71,14 @@ const Whiteboard: React.FC = () => {
                     toast.error('沒有權限存取此白板');
                     navigate(`/map/${currentUser.userName}`);
                     return;
-                }
+                } 
+                const allConnections = fetchedWhiteboard.cards.flatMap((card) =>
+                    (card.connections || []).map((connection) => ({
+                        ...connection,
+                        startCardId: card._id, // 為每個 connection 添加 startCardId
+                    }))
+                );
+                setConnections(allConnections);
 
                 setWhiteboard(fetchedWhiteboard);
                 setCards(fetchedWhiteboard.cards);
@@ -233,7 +240,7 @@ const Whiteboard: React.FC = () => {
 
     // Handle keydown events to delete the selected card
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Delete' && selectedConnectionId) {
+        if ( e.key === 'Delete' && selectedConnectionId) {
             return;
         }
 
@@ -243,7 +250,7 @@ const Whiteboard: React.FC = () => {
                 deleteCardHandler(selectedCardId);
             }
         }
-        if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        if ( selectedCardId == null && (e.ctrlKey || e.metaKey) && e.key === 'v') {
             e.preventDefault(); // 阻止默認行為
             if (copiedCard) {
                 const pastePosition = lastMousePosition || { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // 默認為螢幕中心
@@ -362,12 +369,11 @@ const Whiteboard: React.FC = () => {
                         //console.log("CCCCCCCCCCCCCCCCCCCconnections:", connections)
                         const relatedConnections = connections
                             .filter((connection) => connection.startCardId === card._id)
-                            .map(({ id, startCardId, startOffset, endPoint }) => ({
+                            .map(({ id, startOffset, endPoint }) => ({
                                 id,
-                                startCardId,
                                 startOffset,
                                 endPoint,
-                            })); // 保留 startCardId
+                            })); // 移除 startCardId
                         //console.log("relatedConnections:", relatedConnections)
                         return (
 

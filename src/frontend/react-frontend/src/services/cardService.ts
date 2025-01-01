@@ -22,7 +22,7 @@ export const updateConnection = async (
 ): Promise<void> => {
     const url = `${API_BASE_URL}/${cardId}/connections/${connectionId}`;
     try {
-        console.log('Sending PATCH request:', { cardId, connectionId, updates });
+        //console.log('Sending PATCH request:', { cardId, connectionId, updates });
         const response = await fetch(url, {
             method: 'PATCH',
             headers: {
@@ -80,8 +80,8 @@ export const addConnection = async (cardId: string, newConnection: {
 
     // 打印 URL 和數據
     //console.log("PPPP");
-    console.log("Sending request to:", url);
-    console.log("Request body:", newConnection);
+   // console.log("Sending request to:", url);
+    //console.log("Request body:", newConnection);
     try {
         const response = await fetch(`${API_BASE_URL}/${cardId}/connections`, {
             method: 'PATCH',
@@ -91,7 +91,7 @@ export const addConnection = async (cardId: string, newConnection: {
             body: JSON.stringify({ connections: [newConnection] }),
             //body: JSON.stringify({ connections: updatedConnections }),
         });
-        console.log("RRResponse", response);
+        //console.log("RRResponse", response);
 
         if (!response.ok) {
             await handleRequestError(response, 'Failed to add connection');

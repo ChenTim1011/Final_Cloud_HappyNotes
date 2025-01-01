@@ -17,7 +17,7 @@ type DraggingConnection = {
 };
 interface ConnectionType {
   id: string;
-  startCardId: string;
+  //startCardId: string;
   startOffset: { x: number; y: number };
   endPoint: { x: number; y: number };
 }
@@ -69,7 +69,7 @@ const Card: React.FC<CardProps> = React.memo(({
 }) => {
 
   // Local state for editing mode and input values
-  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const isEditingRef = useRef(false);
   const [editedTitle, setEditedTitle] = useState<string>(cardTitle);
   const [editedContent, setEditedContent] = useState<string>(content);
   const [isFolded, setIsFolded] = useState<boolean>(!!foldOrNot);
@@ -262,7 +262,7 @@ const Card: React.FC<CardProps> = React.memo(({
               ...(type === 'start' ? { startOffset: updatedConnection.startOffset } : {}),
               ...(type === 'end' ? { endPoint: updatedConnection.endPoint } : {}),
             });
-            console.log("updatedConnection:", updatedConnection);
+            //console.log("updatedConnection:", updatedConnection);
             setLocalConnections((prevConnections) =>
               prevConnections.map((conn) =>
                 conn.id === connectionId ? { ...conn, ...updatedConnection } : conn
@@ -272,7 +272,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
 
 
-            console.log('Connection updated successfully');
+            //console.log('Connection updated successfully');
           } catch (error) {
             console.error('Failed to update connection:', error);
           }
@@ -435,12 +435,17 @@ const Card: React.FC<CardProps> = React.memo(({
 
   // Function to save edited content and update the card  
   const handleSave = useCallback(() => {
+    const tempConnections = localConnections.map((conn) => ({
+      ...conn,
+      startCardId: _id, // 添加 startCardId，使用當前卡片的 ID
+  }));
     if (_id) {
       const changes: Partial<CardData> = {
         cardTitle: editedTitle,
         content: editedContent,
         dimensions: localDimensions,
         position: localPosition,
+        connections: tempConnections,
         //connection: connection,
         //connectionBy: connectionBy,
       };
@@ -458,8 +463,7 @@ const Card: React.FC<CardProps> = React.memo(({
       });
 
       handleUpdateCard(_id, changes);
-      setIsEditing(false);
-
+      isEditingRef.current=false;
       // Optionally show a success Toast
       toast.success('卡片已儲存');
     }
@@ -631,10 +635,10 @@ const Card: React.FC<CardProps> = React.memo(({
     setLocalDimensions(dimensions);
     setLocalPosition(position);
   }, [dimensions, position]);
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
       // 檢查是否按下 Ctrl+C 或 Cmd+C
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      if (!isEditingRef.current && (e.ctrlKey || e.metaKey) && e.key === 'c') {
         e.preventDefault(); // 阻止默認行為（例如，複製到剪貼簿）
         if (isSelected) {
           onCopyCard({
@@ -653,31 +657,23 @@ const Card: React.FC<CardProps> = React.memo(({
           console.log('Card copied:', _id);
         }
       }
-    };
 
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isSelected, _id, cardTitle, content, dueDate, tag, foldOrNot, position, dimensions, comments, onCopyCard]);
-
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Delete') {
+      if (selectedConnectionId && e.key === 'Delete') {
         //const userConfirmed = window.confirm("你確定要刪除連結嗎?");
         // if (userConfirmed) {
         handleDeleteConnection(); // 調用刪除函數
         // }
       }
-    };
+      if (isFullscreen && e.key === 'Escape') {
+        //const userConfirmed = window.confirm("你確定要刪除連結嗎?");
+        // if (userConfirmed) {
+          exitFullscreen();
+          setIsFullscreen(false); // 調用刪除函數
+        // }
+      }
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedConnectionId, _id]);
+
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
@@ -687,6 +683,8 @@ const Card: React.FC<CardProps> = React.memo(({
 
   return (
     <div
+    onKeyDown={handleKeyDown} 
+    tabIndex={0}
     >
       {/* SVG for connections */}
       <svg
@@ -804,7 +802,7 @@ const Card: React.FC<CardProps> = React.memo(({
         position={isFullscreen ? { x: 0, y: 0 } : localPosition}
         onDragStop={(e, d) => {
           if (!isFullscreen) { // Only handle drag stop if not fullscreen
-            console.log("d.x,d.y", d);
+            //console.log("d.x,d.y", d);
             const newPosition = { x: d.x, y: d.y };
             handleResize({ width: localDimensions.width, height: localDimensions.height }, newPosition);
             setCards(prevCards => {
@@ -824,6 +822,7 @@ const Card: React.FC<CardProps> = React.memo(({
         }}
         onDrag={(e, d) => {
           if (!isFullscreen) {
+            console.log("Connections:",connections)
             const newPosition = { x: d.x, y: d.y };
             setLocalPosition(newPosition);
 
@@ -857,17 +856,17 @@ const Card: React.FC<CardProps> = React.memo(({
           isFullscreen
             ? false
             : {
-              top: !isEditing,
+              top: isEditingRef.current == false,
               right: true,
-              bottom: !isEditing,
+              bottom: isEditingRef.current == false,
               left: true,
-              topRight: !isEditing,
-              bottomRight: !isEditing,
-              bottomLeft: !isEditing,
-              topLeft: !isEditing,
+              topRight: isEditingRef.current == false,
+              bottomRight: isEditingRef.current == false,
+              bottomLeft: isEditingRef.current == false,
+              topLeft: isEditingRef.current == false,
             }
         }
-        disableDragging={isEditing} // Disable dragging when editing
+        disableDragging={isEditingRef.current == true} // Disable dragging when editing
         onContextMenu={(e: any) => {
           e.stopPropagation();
           onRightClick?.(e, _id);
@@ -881,13 +880,14 @@ const Card: React.FC<CardProps> = React.memo(({
         style={isFullscreen ? { position: 'fixed', top: 0, left: 0, zIndex: 9999 } : {}}
       >
         <div
-          className={`card-content bg-[#F7F1F0] border border-[#C3A6A0] p-6 rounded-xl shadow-lg relative flex flex-col ${isEditing ? '' : 'select-none'
+          className={`card-content bg-[#F7F1F0] border border-[#C3A6A0] p-6 rounded-xl shadow-lg relative flex flex-col ${isEditingRef.current ? '' : 'select-none'
             } ${isFullscreen ? 'fullscreen-content' : ''}`}
-          onDoubleClick={() => setIsEditing(true)}
+          onDoubleClick={() => isEditingRef.current = true}
           onClick={(e) => {
-            console.log("position:", position);
+            //console.log("position:", position);
             e.stopPropagation(); // 阻止冒泡到父容器
             onSelect(_id); // 選中當前卡片
+            //console.log("dimensions:",dimensions);
           }}
           ref={cardRef}
           style={{ boxSizing: 'border-box', overflow: 'visible' }}
@@ -1034,7 +1034,7 @@ const Card: React.FC<CardProps> = React.memo(({
             )}
 
             {/* Header with title and save button */}
-            {isEditing && (
+            {isEditingRef.current && (
               <div className="flex justify-between items-center mb-4 writing-mode-horizontal">
                 <input
                   type="text"
@@ -1056,7 +1056,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
           {/* Content Area */}
           <div className="flex-grow ">
-            {isEditing ? (
+            {isEditingRef.current ? (
               <div className="flex flex-col select-text">
                 {!isFolded && (
                   <QuillEditor
@@ -1071,7 +1071,7 @@ const Card: React.FC<CardProps> = React.memo(({
               <div className="flex flex-col">
                 <h3
                   ref={titleRef}
-                  className="text-xl font-serif font-bold text-[#262220] mt-2 fixed top-0 left-0 w-full bg-[#F7F1F0] z-10"
+                  className="text-xl font-serif font-bold text-[#262220] mt-2 fixed top-0 left-0 w-full bg-[#F7F1F0] z-10 truncate w-full block"
                   style={{ padding: '8px', borderBottom: '0.5px solid #C3A6A0' }}
                 >
                   {cardTitle}
