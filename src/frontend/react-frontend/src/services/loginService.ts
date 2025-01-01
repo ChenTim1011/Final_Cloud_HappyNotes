@@ -124,7 +124,7 @@ export const verifyCode = async (
 
 // GET /api/auth/me - Get current user based on token
 export const getUserFromToken = async (): Promise<UserData> => {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = sessionStorage.getItem('accessToken');
     if (!accessToken) {
         throw new Error('No access token found');
     }

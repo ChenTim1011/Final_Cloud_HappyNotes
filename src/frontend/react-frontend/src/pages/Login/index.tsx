@@ -58,8 +58,8 @@ const Login: React.FC = () => {
         await updateUser(users[0]._id, updatedUser);
 
         // Store tokens
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        sessionStorage.setItem('accessToken', accessToken);
+        sessionStorage.setItem('refreshToken', refreshToken);
 
         // Set currentUser state
         setCurrentUser(auth); 

@@ -30,8 +30,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, setCurrentUser }) => {
     try {
       await updateUser(currentUser._id, updatedUser);
       setCurrentUser(null);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
       toast.success('成功登出');
       navigate('/auth/login');
     } catch (err: any) {

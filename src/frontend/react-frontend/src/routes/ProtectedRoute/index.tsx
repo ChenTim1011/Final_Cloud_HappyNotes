@@ -11,8 +11,8 @@ const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
     const { userName } = useParams();
 
     useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        const refreshToken = localStorage.getItem('refreshToken');
+        const token = sessionStorage.getItem('accessToken');
+        const refreshToken = sessionStorage.getItem('refreshToken');
 
         const validateOrRefreshToken = async () => {
             try {
@@ -27,7 +27,7 @@ const ProtectedRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
                 } else if (refreshToken) {
                     // If token is invalid, try refreshing it
                     const { accessToken: newAccessToken } = await refreshAccessToken(refreshToken);
-                    localStorage.setItem('accessToken', newAccessToken); // Update local storage
+                    sessionStorage.setItem('accessToken', newAccessToken); // Update local storage
                     const refreshedValid = await validateToken(newAccessToken, userName); // Revalidate
                     setIsAuthenticated(refreshedValid); // Update authentication status
                 } else {

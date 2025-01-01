@@ -1,7 +1,7 @@
 // src/pages/Management/index.tsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Import useNavigate
 import Sidebar from '@/components/common/sidebar';
 import { CardData } from '@/interfaces/Card/CardData';
 import Card from '@/components/specific/Management/Card';
@@ -39,6 +39,7 @@ const DEBOUNCE_DELAY = 500; // Debounce delay time in milliseconds
 
 const Management: React.FC = () => {
     const { userName } = useParams<{ userName: string }>();
+    const navigate = useNavigate(); // Initialize navigate
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(''); // New state for debounced search query
     const [whiteboards, setWhiteboards] = useState<WhiteboardData[]>([]);
@@ -56,22 +57,28 @@ const Management: React.FC = () => {
     const [allTags, setAllTags] = useState<string[]>([]); // New state to store all unique tags
     const [currentUser, setCurrentUser] = useState<UserData | null>(null);
 
-    // 1. Get current user data use getUserFromToken
+    // 1. Get current user data using getUserFromToken and implement access control
     useEffect(() => {
         const fetchCurrentUser = async () => {
             try {
                 const user = await getUserFromToken();
                 setCurrentUser(user);
                 setUserId(user._id);
+
+                // Access Control: Check if the userName in URL matches the current user's userName
+                if (userName && user.userName !== userName) {
+                    toast.error('您沒有權限存取此管理頁面');
+                    navigate(`/management/${user.userName}`); // Redirect to the correct Management page
+                }
             } catch (error) {
                 console.error('Failed to fetch current user:', error);
-                setUserError('Failed to fetch current user.');
-                setIsLoading(false);
+                setUserError('請先登入。');
+                navigate('/auth/login'); // Redirect to login if not authenticated
             }
         };
 
         fetchCurrentUser();
-    }, []);
+    }, [navigate, userName]);
 
     // 2. Fetch whiteboards based on userId and ensure cards are populated
     useEffect(() => {
@@ -386,7 +393,7 @@ const Management: React.FC = () => {
             }));
 
             toast.success('卡片已新增');
-        } catch (error:any) {
+        } catch (error: any) {
             console.error('新增卡片失敗：', error);
             toast.error(`新增卡片失敗：${error.message}`);
         }
