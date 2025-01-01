@@ -17,8 +17,7 @@ type DraggingConnection = {
 };
 interface ConnectionType {
   id: string;
-  //startCardId?: string;
-  //startDirection: 'top' | 'bottom' | 'left' | 'right';
+  startCardId: string;
   startOffset: { x: number; y: number };
   endPoint: { x: number; y: number };
 }
@@ -807,7 +806,7 @@ const Card: React.FC<CardProps> = React.memo(({
           if (!isFullscreen) { // Only handle drag stop if not fullscreen
             console.log("d.x,d.y", d);
             const newPosition = { x: d.x, y: d.y };
-            // handleResize({ width: localDimensions.width, height: localDimensions.height }, newPosition);
+            handleResize({ width: localDimensions.width, height: localDimensions.height }, newPosition);
             setCards(prevCards => {
               return prevCards.map(card => {
                 if (card._id === _id) {
@@ -819,7 +818,7 @@ const Card: React.FC<CardProps> = React.memo(({
             setLocalPosition(newPosition);
             // 通知父元件  卡片位置更新
             onPositionChange?.(_id, newPosition);
-            //handleResize({ width: localDimensions.width, height: localDimensions.height }, { x: d.x, y: d.y });
+            handleResize({ width: localDimensions.width, height: localDimensions.height }, { x: d.x, y: d.y });
           }
           //handleSave()
         }}

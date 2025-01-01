@@ -74,9 +74,14 @@ const Map: React.FC = () => {
         e.preventDefault();
     
         if (newWhiteboardTitle.trim() === '') {
-            alert('Whiteboard title is required.');
+            alert('白板標題不可以是空白');
             return;
         }
+
+        if (newWhiteboardTitle.length > 20) {
+          alert('白板標題長度不可以超過20個字元');
+          return;
+      }
     
         if (!currentUser) {
             alert('User data is not available.');
@@ -408,11 +413,21 @@ const Map: React.FC = () => {
               <input
                 type="text"
                 value={newWhiteboardTitle}
-                onChange={(e) => setNewWhiteboardTitle(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value.length <= 20) {
+                      setNewWhiteboardTitle(e.target.value);
+                  } else {
+                      alert('白板標題長度必須小於 20 個字元');
+                  }
+              }}
                 className="w-full px-4 py-2 border border-[#C3A6A0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
                 placeholder="輸入白板標題"
                 required
               />
+              <p className="text-xs text-red-500 mt-1">
+                    {newWhiteboardTitle.length > 20 && '標題不得超過20字元'}
+              </p>
+              
             </div>
             <div className="flex justify-end space-x-4">
               <button
