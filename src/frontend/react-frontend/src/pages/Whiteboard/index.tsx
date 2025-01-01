@@ -237,6 +237,24 @@ const Whiteboard: React.FC = () => {
         };
     }, [contextMenu]);
 
+    
+    const handleStartConnection = (
+        cardId: string,
+        startPoint: { x: number; y: number }
+    ) => {
+        //console.log("SSSSSSSSSS", { cardId, startPoint });
+        if (!startPoint) {
+            console.error('Start point is undefined');
+            return;
+        }
+
+        const startCard = cards.find(card => card._id === cardId);
+        if (!startCard) {
+            console.error(`Card with ID ${cardId} not found`);
+            return;
+        }
+    };
+
     if (loading) {
         return <div className="p-5 text-center">Loading...</div>;
     }
@@ -283,6 +301,8 @@ const Whiteboard: React.FC = () => {
                         setCards={setCards}
                         setFullscreenCardId={setSelectedCardId}
                         onRightClick={(e) => handleRightClick(e, card._id)}
+                        onStartConnection={handleStartConnection}
+                        allCards={cards} 
                     />
                 ))}
         
