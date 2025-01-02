@@ -17,7 +17,7 @@ type DraggingConnection = {
 };
 interface ConnectionType {
   id: string;
-  //startCardId: string;
+  startCardId: string;
   startOffset: { x: number; y: number };
   endPoint: { x: number; y: number };
 }
