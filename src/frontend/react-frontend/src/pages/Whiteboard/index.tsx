@@ -372,6 +372,7 @@ const Whiteboard: React.FC = () => {
                             .filter((connection) => connection.startCardId === card._id)
                             .map(({ id,text ,startOffset, endPoint }) => ({
                                 id,
+                                startCardId: card._id,
                                 startOffset,
                                 endPoint,
                                 text,
