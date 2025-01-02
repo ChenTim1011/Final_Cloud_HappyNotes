@@ -43,12 +43,11 @@ const GET_BY_ID = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch whiteboard" });
   }
 };
-
 // POST api/whiteboards
 // Create a new whiteboard
 const POST = async (req, res) => {
   try {
-    console.log("Request Body:", req.body);
+    //console.log("Request Body:", req.body);
 
     const { whiteboardTitle, isPrivate, userId, position, dimensions, cards } =
       req.body;

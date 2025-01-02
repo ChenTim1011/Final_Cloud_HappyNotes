@@ -20,6 +20,7 @@ interface ConnectionType {
   //startCardId: string;
   startOffset: { x: number; y: number };
   endPoint: { x: number; y: number };
+  text?: string;
 }
 // Interface for Card component props extending CardData
 interface CardProps extends CardData {
@@ -93,6 +94,12 @@ const Card: React.FC<CardProps> = React.memo(({
     connectionId: string;
     type: 'start' | 'end';
   } | null>(null);
+
+  const [editingConnectionId, setEditingConnectionId] = useState<string | null>(null);
+  const [connectionText, setConnectionText] = useState('');
+
+
+
   const draggingConnectionRef = useRef<DraggingConnection | null>(null);
   // Function to update card content with debounce
   const handleUpdateCard = useCallback((cardId: string, changes: Partial<CardData>) => {
@@ -146,7 +153,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
     // 如果有回調函數，將連線的初始信息傳遞給父組件
     if (onStartConnection) {
-      onStartConnection(_id, { x: startX, y: startY }, { x: e.clientX, y: e.clientY });
+      onStartConnection(_id, { x: startX, y: startY }, { x: startX, y: startY });
     }
   };
 
@@ -251,7 +258,7 @@ const Card: React.FC<CardProps> = React.memo(({
     };
 
     const handleMouseUp = async (e: MouseEvent) => {
-      
+
       if (draggingConnectionRef.current) {
         const { connectionId, type } = draggingConnectionRef.current;
         const updatedConnection = localConnections.find((conn) => conn.id === connectionId);
@@ -295,9 +302,12 @@ const Card: React.FC<CardProps> = React.memo(({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!activeConnection) return;
+      const mouseX = e.clientX+5;  // 計算相對滑鼠與endpoint的誤差
+      const mouseY = e.clientY-70 ; // 計算相對滑鼠與endpoint的誤差
+    
 
-      const mouseX = e.clientX;
-      const mouseY = e.clientY;
+      //const mouseX = e.clientX;
+      //const mouseY = e.clientY;
 
       let nearestCard = null;
       let nearestPoint: { x: number; y: number } = { x: mouseX, y: mouseY }; // 默認為滑鼠位置
@@ -438,7 +448,7 @@ const Card: React.FC<CardProps> = React.memo(({
     const tempConnections = localConnections.map((conn) => ({
       ...conn,
       startCardId: _id, // 添加 startCardId，使用當前卡片的 ID
-  }));
+    }));
     if (_id) {
       const changes: Partial<CardData> = {
         cardTitle: editedTitle,
@@ -463,7 +473,7 @@ const Card: React.FC<CardProps> = React.memo(({
       });
 
       handleUpdateCard(_id, changes);
-      isEditingRef.current=false;
+      isEditingRef.current = false;
       // Optionally show a success Toast
       toast.success('卡片已儲存');
     }
@@ -636,42 +646,42 @@ const Card: React.FC<CardProps> = React.memo(({
     setLocalPosition(position);
   }, [dimensions, position]);
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-      // 檢查是否按下 Ctrl+C 或 Cmd+C
-      if (!isEditingRef.current && (e.ctrlKey || e.metaKey) && e.key === 'c') {
-        e.preventDefault(); // 阻止默認行為（例如，複製到剪貼簿）
-        if (isSelected) {
-          onCopyCard({
-            _id,
-            cardTitle,
-            content,
-            dueDate,
-            tag,
-            foldOrNot,
-            position,
-            dimensions,
-            comments,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-          console.log('Card copied:', _id);
-        }
-      }
-
-      if (selectedConnectionId && e.key === 'Delete') {
-        //const userConfirmed = window.confirm("你確定要刪除連結嗎?");
-        // if (userConfirmed) {
-        handleDeleteConnection(); // 調用刪除函數
-        // }
-      }
-      if (isFullscreen && e.key === 'Escape') {
-        //const userConfirmed = window.confirm("你確定要刪除連結嗎?");
-        // if (userConfirmed) {
-          exitFullscreen();
-          setIsFullscreen(false); // 調用刪除函數
-        // }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // 檢查是否按下 Ctrl+C 或 Cmd+C
+    if (!isEditingRef.current && (e.ctrlKey || e.metaKey) && e.key === 'c') {
+      e.preventDefault(); // 阻止默認行為（例如，複製到剪貼簿）
+      if (isSelected) {
+        onCopyCard({
+          _id,
+          cardTitle,
+          content,
+          dueDate,
+          tag,
+          foldOrNot,
+          position,
+          dimensions,
+          comments,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        console.log('Card copied:', _id);
       }
     }
+
+    if (selectedConnectionId && e.key === 'Delete') {
+      //const userConfirmed = window.confirm("你確定要刪除連結嗎?");
+      // if (userConfirmed) {
+      handleDeleteConnection(); // 調用刪除函數
+      // }
+    }
+    if (isFullscreen && e.key === 'Escape') {
+      //const userConfirmed = window.confirm("你確定要刪除連結嗎?");
+      // if (userConfirmed) {
+      exitFullscreen();
+      setIsFullscreen(false); // 調用刪除函數
+      // }
+    }
+  }
 
 
   // Cleanup debounce on unmount
@@ -683,8 +693,8 @@ const Card: React.FC<CardProps> = React.memo(({
 
   return (
     <div
-    onKeyDown={handleKeyDown} 
-    tabIndex={0}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
     >
       {/* SVG for connections */}
       <svg
@@ -699,6 +709,9 @@ const Card: React.FC<CardProps> = React.memo(({
           zIndex: 10,
         }}
         onClick={() => {
+          connections.forEach((connection) => {
+            console.log("connectiontext:", connection.text);
+          });
           if (selectedConnectionId) setSelectedConnectionId(null);
         }}
       >
@@ -725,6 +738,11 @@ const Card: React.FC<CardProps> = React.memo(({
                     setSelectedConnectionId(connection.id);
                     onSelect(null);
                   }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setEditingConnectionId(connection.id);
+                    setConnectionText(connection.text || '');
+                  }}
                 />
 
                 {/* 可見的細線 */}
@@ -734,8 +752,71 @@ const Card: React.FC<CardProps> = React.memo(({
                   x2={endPoint.x}
                   y2={endPoint.y}
                   stroke={selectedConnectionId === connection.id ? 'blue' : 'black'}
-                  strokeWidth={3} // 可見的細線寬度
+                  strokeWidth={2} // 可見的細線寬度
                 />
+                {/* 文字顯示和編輯 */}
+                {editingConnectionId === connection.id ? (
+                  <foreignObject
+                    x={(startPoint.x + endPoint.x) / 2 - 50}
+                    y={(startPoint.y + endPoint.y) / 2 - 15} // 偏移 10px 在線上方
+                    width="100"
+                    height="30"
+                  >
+                    <input
+                      type="text"
+                      value={connectionText}
+                      onChange={(e) => setConnectionText(e.target.value)}
+                      onBlur={() => {
+                        // 更新連線文字
+                        const updatedConnections = localConnections.map((conn) => {
+                          if (conn.id === editingConnectionId) {
+                            return { ...conn, text: connectionText };
+                          }
+                          return conn;
+                        });
+                        setLocalConnections(updatedConnections);
+                        setEditingConnectionId(null);
+                      }}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          const target = e.target as HTMLInputElement;
+                          target.blur();
+                          await updateConnection(_id, editingConnectionId, {
+                            text: connectionText,
+                          });
+                        }
+                      }}
+                      style={{
+                        fontSize: '14px',
+                        border: '1px solid #ccc',
+                        background: 'white',
+                        textAlign: 'center',
+                        outline: 'none',
+                        width: '100%',
+                        height: '100%',
+                        userSelect: 'none',
+                      }}
+                    />
+                  </foreignObject>
+                ) : (
+                  connection.text && (
+                    <text
+                      x={(startPoint.x + endPoint.x) / 2}
+                      y={(startPoint.y + endPoint.y) / 2-6} // 偏移到線的上方
+                      fontSize={14}
+                      fill="black"
+                      dominantBaseline="middle"
+                      textAnchor="middle"
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        setEditingConnectionId(connection.id);
+                        setConnectionText(connection.text || '');
+                      }}
+                    >
+                      {connection.text || 'N'}
+                    </text>
+                  )
+                )}
                 {/* 只有當前連線被選中時，渲染藍點 */}
                 {selectedConnectionId === connection.id && (
                   <>
@@ -769,6 +850,7 @@ const Card: React.FC<CardProps> = React.memo(({
                     />
                   </>
                 )}
+
               </React.Fragment>
             );
           }
@@ -822,7 +904,6 @@ const Card: React.FC<CardProps> = React.memo(({
         }}
         onDrag={(e, d) => {
           if (!isFullscreen) {
-            console.log("Connections:",connections)
             const newPosition = { x: d.x, y: d.y };
             setLocalPosition(newPosition);
 
@@ -841,7 +922,7 @@ const Card: React.FC<CardProps> = React.memo(({
           setLocalPosition(position);
         }}
         onResizeStop={(e, direction, ref, delta, position) => {
-          
+
           if (isFullscreen) return;
           handleResize(
             {
@@ -895,73 +976,73 @@ const Card: React.FC<CardProps> = React.memo(({
 
           {/* Header with fixed buttons and title */}
           <div className="header flex-none ">
-          {localDimensions.height > 80 && (
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center space-x-3">
-                {!isFullscreen && (
-                  <>
-                    {/* Fold button */}
-                    <button
-                      onClick={handleToggleFold}
-                      className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
-                      title={isFolded ? '展開卡片' : '摺疊卡片'}
-                    >
-                      {/* {isFolded ? '+' : '-'} */}
-                    </button>
-
-                    {/* Copy button */}
-                    {localDimensions.width > 120 && (
+            {localDimensions.height > 80 && (
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center space-x-3">
+                  {!isFullscreen && (
+                    <>
+                      {/* Fold button */}
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCopyCard({
-                            _id,
-                            cardTitle,
-                            content,
-                            dueDate,
-                            tag,
-                            foldOrNot,
-                            position,
-                            dimensions,
-                            comments,
-                            createdAt: new Date(),
-                            updatedAt: new Date(),
-                          });
-                        }}
+                        onClick={handleToggleFold}
                         className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
-                        title="複製卡片"
+                        title={isFolded ? '展開卡片' : '摺疊卡片'}
                       >
-                        📄
+                        {/* {isFolded ? '+' : '-'} */}
                       </button>
-                    )}
-                  </>
-                )}
 
-                {/* Fullscreen button */}
+                      {/* Copy button */}
+                      {localDimensions.width > 120 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCopyCard({
+                              _id,
+                              cardTitle,
+                              content,
+                              dueDate,
+                              tag,
+                              foldOrNot,
+                              position,
+                              dimensions,
+                              comments,
+                              createdAt: new Date(),
+                              updatedAt: new Date(),
+                            });
+                          }}
+                          className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
+                          title="複製卡片"
+                        >
+                          📄
+                        </button>
+                      )}
+                    </>
+                  )}
+
+                  {/* Fullscreen button */}
+                  {localDimensions.width > 120 && (
+                    <button
+                      onClick={toggleFullscreen}
+                      className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
+                      title="全螢幕"
+                    >
+                      {isFullscreen ? '離開全螢幕' : '🖥️'}
+                    </button>
+                  )}
+                </div>
+
+
+                {/* Delete button */}
                 {localDimensions.width > 120 && (
                   <button
-                    onClick={toggleFullscreen}
-                    className="text-[#A15C38] hover:text-[#8B4C34] focus:outline-none text-xl"
-                    title="全螢幕"
+                    onClick={handleDelete}
+                    className="text-red-500 hover:text-red-700 focus:outline-none text-xl"
+                    title="刪除卡片"
                   >
-                    {isFullscreen ? '離開全螢幕' : '🖥️'}
+                    🗑️
                   </button>
                 )}
               </div>
-
-
-              {/* Delete button */}
-              {localDimensions.width > 120 && (
-                <button
-                  onClick={handleDelete}
-                  className="text-red-500 hover:text-red-700 focus:outline-none text-xl"
-                  title="刪除卡片"
-                >
-                  🗑️
-                </button>
-              )}
-            </div>
-)}
+            )}
             {isSelected && (
               <>
                 {/* 上方圓點 */}
@@ -1027,10 +1108,10 @@ const Card: React.FC<CardProps> = React.memo(({
               </>
             )}
             {/* Tag Component */}
-            { (isFullscreen || localDimensions.width > 200) &&(
-            <div className="mb-4">
-              <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
-            </div>
+            {(isFullscreen || localDimensions.width > 200) && (
+              <div className="mb-4">
+                <Tag currentTag={tag} onUpdateTag={handleTagUpdate} />
+              </div>
             )}
 
             {/* Header with title and save button */}

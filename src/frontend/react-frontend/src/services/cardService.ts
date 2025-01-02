@@ -18,6 +18,7 @@ export const updateConnection = async (
     updates: {
         startOffset?: { x: number; y: number };
         endPoint?: { x: number; y: number };
+        text?: string;
     }
 ): Promise<void> => {
     const url = `${API_BASE_URL}/${cardId}/connections/${connectionId}`;

@@ -28,6 +28,7 @@ const cardSchema = new mongoose.Schema({
         x: { type: Number, required: true },
         y: { type: Number, required: true },
       },
+      text: { type:String ,required: false },
     },
   ],
 });

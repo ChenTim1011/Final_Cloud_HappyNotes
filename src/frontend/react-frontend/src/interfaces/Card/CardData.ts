@@ -24,7 +24,9 @@ export interface CardData {
       x: number;
       y: number;
     };
+    text?:string
   }>;
+
   comments?: Array<{ 
     commentId: string; 
     userId: string; 

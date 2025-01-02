@@ -38,6 +38,7 @@ const Whiteboard: React.FC = () => {
             // startDirection: 'top' | 'bottom' | 'left' | 'right';
             startOffset: { x: number; y: number };
             endPoint: { x: number; y: number };
+            text?: string; 
         }>
     >([]);
     const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
@@ -369,10 +370,11 @@ const Whiteboard: React.FC = () => {
                         //console.log("CCCCCCCCCCCCCCCCCCCconnections:", connections)
                         const relatedConnections = connections
                             .filter((connection) => connection.startCardId === card._id)
-                            .map(({ id, startOffset, endPoint }) => ({
+                            .map(({ id,text ,startOffset, endPoint }) => ({
                                 id,
                                 startOffset,
                                 endPoint,
+                                text,
                             })); // 移除 startCardId
                         //console.log("relatedConnections:", relatedConnections)
                         return (
