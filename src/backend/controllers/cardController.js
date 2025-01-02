@@ -2,8 +2,8 @@ const Card = require("../models/Card");
 const Whiteboard = require("../models/Whiteboard");
 const sanitizeHTML = require("../utils/sanitize");
 
-const MAX_CONTENT_LENGTH = 5000;
-const MAX_TITLE_LENGTH = 50;
+const MAX_CONTENT_LENGTH = Infinity;
+const MAX_TITLE_LENGTH = Infinity;
 
 // Get all cards
 const GET_CARDS = async (req, res) => {
