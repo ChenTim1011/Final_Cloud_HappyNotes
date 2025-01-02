@@ -139,7 +139,10 @@ const Whiteboard: React.FC = () => {
                 if (createdCard._id) {
                     setCards(prevCards => [...prevCards, createdCard]);
 
-                    const updatedCardIds = [...(whiteboard.cards || []).map(card => typeof card === 'string' ? card : card._id), createdCard._id];
+                    const updatedCardIds = Array.from(new Set([
+                        ...(whiteboard.cards || []).map(card => typeof card === 'string' ? card : card._id),
+                        createdCard._id
+                    ]));
                     await updateWhiteboard(whiteboard._id, { cards: updatedCardIds });
                 }
                 setContextMenu(null);

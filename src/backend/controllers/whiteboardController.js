@@ -89,9 +89,22 @@ const PUT = async (req, res) => {
         .json({ error: "Cards should be an array of card IDs" });
     }
 
+    const existingWhiteboard = await Whiteboard.findById(id);
+    if (!existingWhiteboard) {
+      return res.status(404).json({ error: "Whiteboard not found" });
+    }
+
+    const mergedCards = Array.from(new Set([
+      ...(existingWhiteboard.cards || []),
+      ...(updates.cards || [])
+    ]));
+
+    updates.cards = mergedCards;
+
     const updatedWhiteboard = await Whiteboard.findByIdAndUpdate(id, updates, {
       new: true,
     }).populate("cards");
+
 
     if (!updatedWhiteboard) {
       return res.status(404).json({ error: "Whiteboard not found" });
