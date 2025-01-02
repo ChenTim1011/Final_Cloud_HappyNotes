@@ -1,0 +1,87 @@
+/* Custom toolbar background and text color */
+.ql-toolbar.ql-bubble {
+    position: relative; /* Set to relative positioning */
+    z-index: 10001 !important; /* Ensure it is on top */
+    background-color: #F7F1F0; /* Toolbar background */
+    border: 1px solid #8B4C34; /* Toolbar border */
+    border-radius: 8px; /* Rounded corners for the toolbar */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Shadow effect */
+    margin-bottom: 8px; /* Space between toolbar and content */
+}
+
+/* Custom z-index for floating tooltips in the toolbar */
+.ql-tooltip.ql-bubble {
+    z-index: 10002 !important; /* Ensure tooltips appear above the toolbar */
+    position: absolute; /* Ensure proper positioning */
+}
+
+/* Custom toolbar button colors */
+.ql-toolbar.ql-bubble .ql-picker-label,
+.ql-toolbar.ql-bubble .ql-picker-item,
+.ql-toolbar.ql-bubble .ql-stroke,
+.ql-toolbar.ql-bubble .ql-fill,
+.ql-toolbar.ql-bubble .ql-font,
+.ql-toolbar.ql-bubble .ql-size,
+.ql-toolbar.ql-bubble .ql-align,
+.ql-toolbar.ql-bubble .ql-direction,
+.ql-toolbar.ql-bubble .ql-background,
+.ql-toolbar.ql-bubble .ql-color {
+    color: #A15C38; /* Primary button color */
+}
+
+/* Custom hover state for toolbar buttons */
+.ql-toolbar.ql-bubble button:hover,
+.ql-toolbar.ql-bubble .ql-picker-label:hover,
+.ql-toolbar.ql-bubble .ql-picker-item:hover {
+    color: #8B4C34; /* Darker color for hover state */
+}
+
+/* Custom active button styles */
+.ql-toolbar.ql-bubble button.ql-active {
+    color: #8B4C34; /* Color when selected */
+}
+
+/* Adjust toolbar button size */
+.ql-toolbar.ql-bubble button {
+    width: 32px;
+    height: 32px;
+}
+
+/* Adjust toolbar icon size */
+.ql-toolbar.ql-bubble .ql-picker-label::before,
+.ql-toolbar.ql-bubble .ql-stroke,
+.ql-toolbar.ql-bubble .ql-fill {
+    font-size: 16px;
+}
+
+/* Adjust editor container */
+.editor-container {
+    height: 100%; /* Fill parent container */
+    overflow: visible !important; /* Ensure parent container handles scrolling */
+    overflow-x: hidden; /* Hide horizontal scrollbars */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 10000;
+    border: 1px solid #C3A6A0; /* Match card border */
+    border-radius: 8px;
+    background-color: #F7F1F0; /* Match card background */
+    box-sizing: border-box;
+}
+
+/* Style the ql-editor to ensure compatibility with placeholder */
+.editor-container .ql-editor {
+    position: relative; /* Use relative positioning for child elements */
+    padding: 20px 8px 8px 8px; /* Add padding to avoid overlap with placeholder */
+    background-color: transparent; /* Transparent background for editor */
+    flex-grow: 1; /* Ensure editor fills the parent container */
+    top: -10px; 
+    overflow-y: visible; /* Allow parent container to handle scrolling */
+}
+
+/* Adjust inner border and padding for the editor */
+.editor-container .ql-editor {
+    border: none; /* Remove the inner border */
+    top: -10px; 
+    padding: 8px; /* Add padding for better spacing */
+}

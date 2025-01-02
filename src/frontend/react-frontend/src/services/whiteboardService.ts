@@ -4,17 +4,23 @@ import { WhiteboardData } from '../interfaces/Whiteboard/WhiteboardData';
 import { WhiteboardUpdateData } from '@/interfaces/Whiteboard/WhiteboardUpdateData';
 import { CreateWhiteboardData } from '@/interfaces/Whiteboard/CreateWhiteboardData';
 
-const API_BASE_URL = 'http://localhost:3000/api/whiteboards'; // according to your backend API
+
+const API_BASE_URL = process.env.NODE_ENV === "production" ? "/api/whiteboards" : "http://localhost:3000/api/whiteboards";
 
 
+// GET /api/whiteboards - Get all whiteboards or filter by userId
+export const getAllWhiteboards = async (userId?: string): Promise<WhiteboardData[]> => {
+    let url = API_BASE_URL;
+    if (userId) {
+        url += `?userId=${userId}`;
+    }
 
-// GET /api/whiteboards - Get all whiteboards
-export const getAllWhiteboards = async (): Promise<WhiteboardData[]> => {
-    const response = await fetch(API_BASE_URL, {
+    const response = await fetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -32,6 +38,7 @@ export const getWhiteboardById = async (id: string): Promise<WhiteboardData> => 
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -52,6 +59,7 @@ export const createWhiteboard = async (
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(whiteboard),
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -66,7 +74,7 @@ export const createWhiteboard = async (
 // PUT /api/whiteboards/:id - update the whiteboard with the specified ID
 export const updateWhiteboard = async (
     id: string,
-    updateData: WhiteboardUpdateData
+    updateData: Partial<WhiteboardUpdateData>
 ): Promise<WhiteboardData> => {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
@@ -74,6 +82,7 @@ export const updateWhiteboard = async (
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData),
+        credentials: "include",
     });
 
     if (!response.ok) {
@@ -92,6 +101,7 @@ export const deleteWhiteboardById = async (id: string): Promise<void> => {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: "include",
     });
 
     if (!response.ok) {

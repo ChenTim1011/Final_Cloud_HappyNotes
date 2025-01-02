@@ -1,4 +1,7 @@
 
 export interface WhiteboardUpdateData {
-    cards: string[]; // only the card IDs
+    cards: string[]; 
+    position?: { x: number; y: number };
+    dimensions?: { width: number; height: number };
+    updatedAt?: Date;
 }

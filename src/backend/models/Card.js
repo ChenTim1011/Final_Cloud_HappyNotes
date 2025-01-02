@@ -18,16 +18,17 @@ const cardSchema = new mongoose.Schema({
     width: { type: Number, default: 200 },
     height: { type: Number, default: 150 },
   },
-  connection: [
+  connections: [
     {
-      toNoteId: mongoose.Schema.Types.ObjectId,
-      position: Number, // 0:上, 1:右, 2:下, 3:左
-    },
-  ],
-  connectionBy: [
-    {
-      toNoteId: mongoose.Schema.Types.ObjectId,
-      position: Number, // 0:上, 1:右, 2:下, 3:左
+      //startDirection: 'top' | 'bottom' | 'left' | 'right',
+      //startCardId: { type: String},
+      id: { type: String},
+      startOffset: { x: Number, y: Number },
+      endPoint: { // 連線的終點座標
+        x: { type: Number, required: true },
+        y: { type: Number, required: true },
+      },
+      text: { type:String ,required: false },
     },
   ],
 });

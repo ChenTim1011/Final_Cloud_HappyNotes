@@ -14,11 +14,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
+    "dompurify": "^3.2.3",
+    "dotenv": "^16.4.7",
     "express": "^4.21.1",
     "FinalCloud": "file:..",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.4.1",
+    "jsdom": "^25.0.1",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.2",
-    "pm2": "^5.4.2"
+    "nodemailer": "^6.9.16",
+    "pm2": "^5.4.2",
+    "redis": "^4.7.0"
   }
 }
