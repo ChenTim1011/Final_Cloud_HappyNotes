@@ -171,8 +171,8 @@ const Card: React.FC<CardProps> = React.memo(({
               const rect = cardRef.current?.getBoundingClientRect();
               if (!rect) return conn;
 
-              const mouseX = e.clientX;
-              const mouseY = e.clientY;
+              const mouseX = e.clientX + 5;  // 計算相對滑鼠與endpoint的誤差
+              const mouseY = e.clientY - 70; // 計算相對滑鼠與endpoint的誤差
 
               // 限制滑鼠位置在卡片邊框
               const isCloserToVerticalEdge =
@@ -199,8 +199,8 @@ const Card: React.FC<CardProps> = React.memo(({
               return { ...conn, startOffset: { x: offsetX, y: offsetY } };
             } else {
               // 自動校正邏輯 - 尋找最近的卡片並修正終點
-              const mouseX = e.clientX;
-              const mouseY = e.clientY;
+              const mouseX = e.clientX + 5;  // 計算相對滑鼠與endpoint的誤差
+              const mouseY = e.clientY - 70; // 計算相對滑鼠與endpoint的誤差
 
               let nearestCard = null;
               let nearestPoint: { x: number; y: number } = { x: mouseX, y: mouseY };
