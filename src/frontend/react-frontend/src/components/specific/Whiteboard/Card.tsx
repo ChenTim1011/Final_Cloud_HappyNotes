@@ -302,9 +302,9 @@ const Card: React.FC<CardProps> = React.memo(({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!activeConnection) return;
-      const mouseX = e.clientX+5;  // 計算相對滑鼠與endpoint的誤差
-      const mouseY = e.clientY-70 ; // 計算相對滑鼠與endpoint的誤差
-    
+      const mouseX = e.clientX + 5;  // 計算相對滑鼠與endpoint的誤差
+      const mouseY = e.clientY - 70; // 計算相對滑鼠與endpoint的誤差
+
 
       //const mouseX = e.clientX;
       //const mouseY = e.clientY;
@@ -802,7 +802,7 @@ const Card: React.FC<CardProps> = React.memo(({
                   connection.text && (
                     <text
                       x={(startPoint.x + endPoint.x) / 2}
-                      y={(startPoint.y + endPoint.y) / 2-6} // 偏移到線的上方
+                      y={(startPoint.y + endPoint.y) / 2 - 6} // 偏移到線的上方
                       fontSize={14}
                       fill="black"
                       dominantBaseline="middle"
@@ -1152,7 +1152,8 @@ const Card: React.FC<CardProps> = React.memo(({
               <div className="flex flex-col">
                 <h3
                   ref={titleRef}
-                  className="text-xl font-serif font-bold text-[#262220] mt-2 fixed top-0 left-0 w-full bg-[#F7F1F0] z-10 truncate w-full block"
+                  className={`text-xl font-serif font-bold text-[#262220] mt-2 ${!isFullscreen ? "fixed top-0 left-0 w-full bg-[#F7F1F0] z-10" : ""
+                    } truncate block`}
                   style={{ padding: '8px', borderBottom: '0.5px solid #C3A6A0' }}
                 >
                   {cardTitle}
