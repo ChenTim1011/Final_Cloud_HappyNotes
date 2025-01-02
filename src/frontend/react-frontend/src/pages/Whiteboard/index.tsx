@@ -371,9 +371,10 @@ const Whiteboard: React.FC = () => {
                             .filter((connection) => connection.startCardId === card._id)
                             .map(({ id, startOffset, endPoint }) => ({
                                 id,
+                                startCardId: card._id,
                                 startOffset,
                                 endPoint,
-                            })); // 移除 startCardId
+                            }));
                         //console.log("relatedConnections:", relatedConnections)
                         return (
 
