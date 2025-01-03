@@ -46,7 +46,7 @@ const ResetPassword: React.FC = () => {
 
     // Validate username
     useEffect(() => {
-        const userNameRegex = /^[A-Za-z0-9]+$/; // 僅允許英文和數字
+        const userNameRegex = /^[A-Za-z0-9]+$/; // Allow only alphanumeric characters
         const valid = userNameRegex.test(userName) && userName.length > 0;
         setUserNameValid(valid);
     }, [userName]);

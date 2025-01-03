@@ -7,6 +7,7 @@ import { updateUser, getUserByName } from '@/services/userService';
 import { authenticateUser } from "@/services/loginService";
 import { toast } from 'react-toastify';
 import { UserData } from '@/interfaces/User/UserData';
+import DOMPurify from "dompurify";
 
 const Login: React.FC = () => {
   const userNameRef = useRef<HTMLInputElement | null>(null);
@@ -17,6 +18,9 @@ const Login: React.FC = () => {
 
   // Add state to manage the disabled state of the login button
   const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
+
+  // Use DOMPurify to sanitize input
+  const sanitizeInput = (input: string) => DOMPurify.sanitize(input);
 
   const login = async () => {
     // If the button is already disabled, prevent further execution
@@ -51,8 +55,12 @@ const Login: React.FC = () => {
         }
       };
 
-      const userName = userNameRef.current?.value || null;
-      const userPassword = userPasswordRef.current?.value || null;
+      // Fetch the user's input and sanitize it
+      const rawUserName = userNameRef.current?.value || null;
+      const rawUserPassword = userPasswordRef.current?.value || null;
+
+      const userName = rawUserName ? sanitizeInput(rawUserName) : null;
+      const userPassword = rawUserPassword ? sanitizeInput(rawUserPassword) : null;
 
       // Validate the input fields
       validateInput(userName, "帳號");
