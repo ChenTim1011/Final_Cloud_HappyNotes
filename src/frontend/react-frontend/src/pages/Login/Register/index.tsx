@@ -43,6 +43,9 @@ const Register: React.FC = () => {
     // Use the useNavigate hook to handle page navigation
     const navigate = useNavigate();    
 
+    // Add state to manage the disabled state of the register button
+    const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
+
     // Function to sanitize input using DOMPurify to prevent injection
     const sanitizeInput = (input: string) => DOMPurify.sanitize(input);
 
@@ -78,7 +81,19 @@ const Register: React.FC = () => {
     }, [userName]);
 
     const registerHandler = async () => {
+        // If the button is already disabled, prevent further execution
+        if (isButtonDisabled) {
+            return;
+        }
+
         try {
+            // Disable the button immediately after click
+            setIsButtonDisabled(true);
+            // Re-enable the button after 1 second
+            setTimeout(() => {
+                setIsButtonDisabled(false);
+            }, 1000);
+
             // Perform final validation before submission
             if (!userNameValid || !passwordValidState || !emailValid || !isPasswordMatch) {
                 toast.error("請修正表單中的錯誤。");
@@ -306,13 +321,13 @@ const Register: React.FC = () => {
                     <button
                         type="submit"
                         className={`w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-2 text-sm rounded-lg transition-colors ${
-                            !userNameValid || !passwordValidState || !emailValid || !isPasswordMatch
+                            !userNameValid || !passwordValidState || !emailValid || !isPasswordMatch || isButtonDisabled
                                 ? "opacity-50 cursor-not-allowed"
                                 : ""
                         }`}
-                        disabled={!userNameValid || !passwordValidState || !emailValid || !isPasswordMatch}
+                        disabled={!userNameValid || !passwordValidState || !emailValid || !isPasswordMatch || isButtonDisabled}
                     >
-                        送出
+                        {isButtonDisabled ? "請稍候..." : "送出"}
                     </button>
                 </form>
                 
