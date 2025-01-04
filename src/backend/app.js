@@ -27,6 +27,9 @@ require("./config/db");
 
 const app = express();
 
+// Enable trust proxy
+app.set("trust proxy", true);
+
 const allowedOrigins =
   NODE_ENV === "production"
     ? ["https://happynote.online", "https://www.happynote.online"]

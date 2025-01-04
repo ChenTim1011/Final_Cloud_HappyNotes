@@ -8,6 +8,8 @@ import { authenticateUser } from "@/services/loginService";
 import { toast } from 'react-toastify';
 import { UserData } from '@/interfaces/User/UserData';
 
+
+
 const Login: React.FC = () => {
   const userNameRef = useRef<HTMLInputElement | null>(null);
   const userPasswordRef = useRef<HTMLInputElement | null>(null);
@@ -15,8 +17,26 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<UserData | null>(null); 
 
+  // Add state to manage the disabled state of the login button
+  const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
+
+
+
   const login = async () => {
+    // If the button is already disabled, prevent further execution
+    if (isButtonDisabled) {
+      return;
+    }
+
     try {
+      // Disable the button immediately after click
+      setIsButtonDisabled(true);
+      // Re-enable the button after 1 second
+      setTimeout(() => {
+        setIsButtonDisabled(false);
+      }, 1000);
+
+      // Function to validate input fields
       const validateInput = (input: string | null, fieldName: string) => {
         if (fieldName === "帳號") {
           if (input === null || !/^[\u4e00-\u9fa5a-zA-Z0-9]+$/.test(input)) {
@@ -35,12 +55,15 @@ const Login: React.FC = () => {
         }
       };
 
+      // Get the input values from the
       const userName = userNameRef.current?.value || null;
       const userPassword = userPasswordRef.current?.value || null;
 
+      // Validate the input fields
       validateInput(userName, "帳號");
       validateInput(userPassword, "密碼");
 
+      // Fetch users by username
       const users = await getUserByName(userName);
 
       const updatedUser: UserUpdateData = {
@@ -48,18 +71,20 @@ const Login: React.FC = () => {
       };
 
       try {
-       
+        // Authenticate the user
         const { user: auth, accessToken, refreshToken } = await authenticateUser(userName, userPassword);
+        // Update the user's login status in the database
         await updateUser(users[0]._id, updatedUser);
 
-        // Store tokens
+        // Store tokens in session storage
         sessionStorage.setItem('accessToken', accessToken);
         sessionStorage.setItem('refreshToken', refreshToken);
 
-        // Set currentUser state
+        // Update the currentUser state
         setCurrentUser(auth); 
 
         toast.success('登入成功！');
+        // Navigate to the user's map page
         navigate(`../../map/${auth.userName}`);
       } catch (error: any) {
         console.log(error);
@@ -79,8 +104,9 @@ const Login: React.FC = () => {
             } else {
               toast.error(<div>帳號或密碼錯誤，請重新輸入</div>);
             }
+          // If the user has tried to log in too many times
           } else {
-            toast.error(<div>未知錯誤，請稍後再試</div>);
+            toast.error(<div>嘗試登入太多次，請稍後再嘗試</div>);
           }
         } else {
           toast.error(
@@ -91,7 +117,6 @@ const Login: React.FC = () => {
         }
       }
 
-
     } catch(error) {
       if (error instanceof Error) {
         console.error("帳號或密碼錯誤，請重新輸入", error.message);
@@ -101,10 +126,10 @@ const Login: React.FC = () => {
           </div>,
         );
       } else {
-        console.error("發生未知錯誤");
+        console.error("嘗試登入太多次，請稍後再嘗試");
         toast.error(
           <div>
-            發生未知錯誤。
+            嘗試登入太多次，請稍後再嘗試。
           </div>,
         );
       }
@@ -167,9 +192,14 @@ const Login: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-3 text-lg rounded-lg transition-colors"
+            className={`w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-3 text-lg rounded-lg transition-colors ${
+              !isButtonDisabled
+                ? ""
+                : "opacity-50 cursor-not-allowed"
+            }`}
+            disabled={isButtonDisabled}
           >
-            登入
+            {isButtonDisabled ? "請稍候..." : "登入"}
           </button>
         </form>
 

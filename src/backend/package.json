@@ -20,6 +20,8 @@
     "dompurify": "^3.2.3",
     "dotenv": "^16.4.7",
     "express": "^4.21.1",
+    "express-rate-limit": "^7.5.0",
+    "express-validator": "^7.2.1",
     "FinalCloud": "file:..",
     "helmet": "^8.0.0",
     "ioredis": "^5.4.1",
@@ -28,6 +30,7 @@
     "mongoose": "^8.7.2",
     "nodemailer": "^6.9.16",
     "pm2": "^5.4.2",
-    "redis": "^4.7.0"
+    "redis": "^4.7.0",
+    "sanitize-html": "^2.14.0"
   }
 }

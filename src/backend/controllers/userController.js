@@ -5,7 +5,7 @@ const User = require("../models/User");
 const GET = async (req, res) => {
   try {
     const users = await User.find();
-    res.json(users.map(user => user.toObject()));
+    res.json(users.map((user) => user.toObject()));
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch users" });
   }
@@ -32,17 +32,16 @@ const GET_BY_ID = async (req, res) => {
 // Get a user by userName
 const GET_BY_NAME = async (req, res) => {
   try {
-    // const { userName } = req.params;
     const { userName } = req.params;
     console.log("Received query params:", userName);
 
-    const users = await User.find({ userName }).populate('whiteboards').exec();
+    const users = await User.find({ userName }).populate("whiteboards").exec();
 
     if (!users) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(users.map(user => user.toObject()));
+    res.json(users.map((user) => user.toObject()));
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch user" });
   }
@@ -64,13 +63,15 @@ const POST = async (req, res) => {
       email,
       whiteboards: [],
       activityLog: [],
-      tags: []
+      tags: [],
     });
 
     const savedUser = await newUser.save();
     res.status(201).json(savedUser.toObject());
   } catch (error) {
-    res.status(400).json({ error: "Failed to create user", details: error.message });
+    res
+      .status(400)
+      .json({ error: "Failed to create user", details: error.message });
   }
 };
 
@@ -81,7 +82,9 @@ const PUT = async (req, res) => {
     const { id } = req.params;
     const updates = { ...req.body };
 
-    const updatedUser = await User.findByIdAndUpdate(id, updates, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(id, updates, {
+      new: true,
+    });
 
     if (!updatedUser) {
       return res.status(404).json({ error: "User not found" });
@@ -89,7 +92,9 @@ const PUT = async (req, res) => {
 
     res.json(updatedUser.toObject());
   } catch (error) {
-    res.status(400).json({ error: "Failed to update user", details: error.message });
+    res
+      .status(400)
+      .json({ error: "Failed to update user", details: error.message });
   }
 };
 
