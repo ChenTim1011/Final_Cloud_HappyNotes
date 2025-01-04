@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { toast } from 'react-toastify';
+import DOMPurify from 'dompurify';
 
 const VerificationCodeModal: React.FC<{
   onClose: () => void;
@@ -9,6 +10,8 @@ const VerificationCodeModal: React.FC<{
 }> = ({ onClose, onSubmit }) => {
   const [code, setCode] = useState("");
   
+  // Use DOMPurify to sanitize input
+  const sanitizeInput = (input: string) => DOMPurify.sanitize(input);
 
   const handleConfirm = () => {
     if (!code.trim()) {
@@ -27,7 +30,7 @@ const VerificationCodeModal: React.FC<{
         <input
           type="text"
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) => setCode(sanitizeInput(e.target.value))}
           placeholder="輸入驗證碼"
           className="w-full px-5 py-3 border border-[#C3A6A0] rounded-md text-base focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
         />

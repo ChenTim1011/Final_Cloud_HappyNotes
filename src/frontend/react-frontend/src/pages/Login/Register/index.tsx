@@ -7,8 +7,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import bcrypt from 'bcryptjs';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-import VerificationCodeModal from '@/pages/Login/ResetPassword/VerificationCodeModal'; // 確保路徑正確
-import { sendVerificationCode, verifyCode } from '@/services/loginService'; // 匯入驗證函式
+import VerificationCodeModal from '@/pages/Login/ResetPassword/VerificationCodeModal'; 
+import { sendVerificationCode, verifyCode } from '@/services/loginService'; 
+import DOMPurify from 'dompurify'; 
 
 const Register: React.FC = () => {
     // State to manage form inputs
@@ -31,12 +32,22 @@ const Register: React.FC = () => {
     // State to handle verification modal
     const [showVerification, setShowVerification] = useState(false);
     
-
     // Temporary state to hold user data until verification
     const [tempUserData, setTempUserData] = useState<CreateUserData | null>(null);
 
+    // Validation states for each field
+    const [userNameValid, setUserNameValid] = useState<boolean>(false);
+    const [passwordValidState, setPasswordValidState] = useState<boolean>(false);
+    const [emailValid, setEmailValid] = useState<boolean>(false);
+
     // Use the useNavigate hook to handle page navigation
     const navigate = useNavigate();    
+
+    // Add state to manage the disabled state of the register button
+    const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
+
+    // Function to sanitize input using DOMPurify to prevent injection
+    const sanitizeInput = (input: string) => DOMPurify.sanitize(input);
 
     // Effect to validate password on change
     useEffect(() => {
@@ -46,73 +57,54 @@ const Register: React.FC = () => {
         const number = /\d/.test(password);
         setPasswordValid({ length, uppercase, lowercase, number });
 
+        // Update password validity state
+        const isValid = length && uppercase && lowercase && number;
+        setPasswordValidState(isValid);
+
         // Check if passwords match
         setIsPasswordMatch(password !== "" && password === passwordAgain);
     }, [password, passwordAgain]);
 
-    const registerHandler = async () => {
-        try {
-            // Validation function: allows only Chinese characters, English letters, and numbers
-            const validateInput = (input: string | null, fieldName: string) => {
-                if (fieldName === "帳號") {
-                    // Check if input is null or contains invalid characters
-                    if (input === null || !/^[\u4e00-\u9fa5a-zA-Z0-9]+$/.test(input)) {
-                        toast.error(
-                            <div>
-                                {fieldName}只能包含中英文、數字，且不能為空
-                            </div>,
-                        );
-                        throw new Error(`${fieldName}只能包含中英文、數字，且不能為空`);
-                    }
-                } else if (fieldName === "密碼") {
-                    // Check if password meets requirements
-                    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-                    if (input === null || !passwordRegex.test(input)) {
-                        toast.error(
-                            <div>
-                                {fieldName}必須包含大小寫英文、數字，且長度至少為8個字元
-                            </div>,
-                        );
-                        throw new Error(`${fieldName}必須包含大小寫英文、數字，且長度至少為8個字元`);
-                    }
-                } else if (fieldName === "email") {
-                    // Basic email validation
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (input === null || input === "" || !emailRegex.test(input)) {
-                        toast.error(
-                            <div>
-                                {fieldName}格式不正確
-                            </div>,
-                        );
-                        throw new Error(`${fieldName}格式不正確`);
-                    }
-                }
-            };
+    // Effect to validate email in real-time
+    useEffect(() => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const valid = emailRegex.test(email);
+        setEmailValid(valid);
+    }, [email]);
 
-            // Validate each input
-            validateInput(userName, "帳號");
-            validateInput(password, "密碼");
-            validateInput(passwordAgain, "密碼");
-            validateInput(email, "email");
+    // Effect to validate userName in real-time
+    useEffect(() => {
+        // Updated regex: only English letters and numbers
+        const userNameRegex = /^[A-Za-z0-9]+$/;
+        const valid = userNameRegex.test(userName) && userName.length > 0;
+        setUserNameValid(valid);
+    }, [userName]);
+
+    const registerHandler = async () => {
+        // If the button is already disabled, prevent further execution
+        if (isButtonDisabled) {
+            return;
+        }
+
+        try {
+            // Disable the button immediately after click
+            setIsButtonDisabled(true);
+            // Re-enable the button after 1 second
+            setTimeout(() => {
+                setIsButtonDisabled(false);
+            }, 1000);
+
+            // Perform final validation before submission
+            if (!userNameValid || !passwordValidState || !emailValid || !isPasswordMatch) {
+                toast.error("請修正表單中的錯誤。");
+                return;
+            }
 
             // Avoid Duplicated userName
             const users = await getUserByName(userName);
             if(users.length !== 0){
-                toast.error(`此用戶已存在`);
-                throw new Error(`此用戶已存在`);
-            }
-
-            // Avoid inconsistent password
-            if(password !== passwordAgain){
-                toast.error(`請確保兩次輸入的密碼相同。`);
-                throw new Error(`請確保兩次輸入的密碼相同。`);
-            }
-
-            // Ensure password meets all conditions before sending verification code
-            const allValid = Object.values(passwordValid).every(Boolean);
-            if (!allValid) {
-                toast.error(`密碼不符合所有要求。`);
-                throw new Error(`密碼不符合所有要求。`);
+                toast.error("帳號錯誤");
+                return;
             }
 
             // Prepare temporary user data
@@ -124,7 +116,7 @@ const Register: React.FC = () => {
             setTempUserData(newUserData);
 
             // Send verification code
-            const response = await sendVerificationCode(userName, email);
+            await sendVerificationCode(userName, email);
             setShowVerification(true);
 
             // Show success toast with bold email
@@ -207,7 +199,7 @@ const Register: React.FC = () => {
         }
     };
 
-    // Function to render password validation icon and text
+    // Function to render validation icon and text
     const renderValidation = (isValid: boolean, text: string) => {
         return (
             <div className="flex items-center mb-1">
@@ -224,7 +216,7 @@ const Register: React.FC = () => {
     };
 
     return (
-        <div className="flex items-center justify-center h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
             <div className="w-[28rem] bg-white rounded-lg shadow-lg p-10 relative">
                 <h2 className="text-2xl font-semibold text-center text-[#262220] mb-6">
                     註冊
@@ -246,12 +238,16 @@ const Register: React.FC = () => {
                         <input
                             type="text"
                             value={userName}
-                            onChange={(e) => setUserName(e.target.value)}
+                            onChange={(e) => setUserName(sanitizeInput(e.target.value))}
                             id="userName"
-                            className="w-full px-4 py-2 border border-[#C3A6A0] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
-                            placeholder="輸入您的帳號"
+                            maxLength={100} 
+                            className={`w-full px-4 py-2 border ${
+                                userName ? (userNameValid ? "border-green-500" : "border-red-500") : "border-[#C3A6A0]"
+                            } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]`}
+                            placeholder="輸入您的帳號 (英文、數字)"
                             required
                         />
+                        {userName && renderValidation(userNameValid, userNameValid ? "帳號有效（僅含英文和數字）" : "帳號無效（僅含英文和數字）")}
                     </div>
                     <div className="mb-4">
                         <label
@@ -263,10 +259,13 @@ const Register: React.FC = () => {
                         <input
                             type="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => setPassword(sanitizeInput(e.target.value))}
                             id="password"
-                            className="w-full px-4 py-2 border border-[#C3A6A0] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
-                            placeholder="輸入您的密碼"
+                            maxLength={100} 
+                            className={`w-full px-4 py-2 border ${
+                                password ? (passwordValidState ? "border-green-500" : "border-red-500") : "border-[#C3A6A0]"
+                            } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]`}
+                            placeholder="至少8個字元，包含大小寫字母及數字"
                             required
                         />
                         {/* Password Validation Indicators */}
@@ -287,25 +286,16 @@ const Register: React.FC = () => {
                         <input
                             type="password"
                             value={passwordAgain}
-                            onChange={(e) => setPasswordAgain(e.target.value)}
+                            onChange={(e) => setPasswordAgain(sanitizeInput(e.target.value))}
                             id="repassword"
-                            className="w-full px-4 py-2 border border-[#C3A6A0] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
+                            maxLength={100} 
+                            className={`w-full px-4 py-2 border ${
+                                passwordAgain ? (isPasswordMatch ? "border-green-500" : "border-red-500") : "border-[#C3A6A0]"
+                            } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]`}
                             placeholder="再次輸入您的密碼"
                             required
                         />
-                        {/* Password Match Indicator */}
-                        {passwordAgain && (
-                            <div className="flex items-center mt-1">
-                                {isPasswordMatch ? (
-                                    <FaCheckCircle className="text-green-500 mr-2" />
-                                ) : (
-                                    <FaTimesCircle className="text-red-500 mr-2" />
-                                )}
-                                <span className={isPasswordMatch ? "text-green-500" : "text-red-500"}>
-                                    {isPasswordMatch ? "密碼一致" : "密碼不一致"}
-                                </span>
-                            </div>
-                        )}
+                        {passwordAgain && renderValidation(isPasswordMatch, isPasswordMatch ? "密碼一致" : "密碼不一致")}
                     </div>
                     <div className="mb-4">
                         <label
@@ -317,26 +307,30 @@ const Register: React.FC = () => {
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            maxLength={100} 
+                            onChange={(e) => setEmail(sanitizeInput(e.target.value))}
                             id="email"
-                            className="w-full px-4 py-2 border border-[#C3A6A0] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
-                            placeholder="輸入您的 Email"
+                            className={`w-full px-4 py-2 border ${
+                                email ? (emailValid ? "border-green-500" : "border-red-500") : "border-[#C3A6A0]"
+                            } rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#A15C38]`}
+                            placeholder="example@domain.com"
                             required
                         />
+                        {email && renderValidation(emailValid, emailValid ? "Email 格式有效" : "Email 格式無效")}
                     </div>
                     <button
                         type="submit"
                         className={`w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-2 text-sm rounded-lg transition-colors ${
-                            !Object.values(passwordValid).every(Boolean) || !isPasswordMatch
+                            !userNameValid || !passwordValidState || !emailValid || !isPasswordMatch || isButtonDisabled
                                 ? "opacity-50 cursor-not-allowed"
                                 : ""
                         }`}
-                        disabled={!Object.values(passwordValid).every(Boolean) || !isPasswordMatch}
+                        disabled={!userNameValid || !passwordValidState || !emailValid || !isPasswordMatch || isButtonDisabled}
                     >
-                        送出
+                        {isButtonDisabled ? "請稍候..." : "送出"}
                     </button>
                 </form>
-
+                
                 <div className="flex justify-center mt-4">
                     <button
                         onClick={() => navigate("../../auth/login")}
@@ -346,7 +340,7 @@ const Register: React.FC = () => {
                     </button>
                 </div>
             </div>
-
+            
             {showVerification && tempUserData && (
                 <VerificationCodeModal
                     onClose={() => setShowVerification(false)}
