@@ -104,7 +104,6 @@ const Whiteboard: React.FC = () => {
         setCopiedCard(cardWithoutPosition);
         toast.info('卡片已複製，您可以在空白區域右鍵選擇貼上。');
     };
-
     // Add a new card at the specified x and y coordinates
     const addCard = useCallback(
         async (x: number, y: number, cardData?: CardData) => {
@@ -139,11 +138,8 @@ const Whiteboard: React.FC = () => {
                 if (createdCard._id) {
                     setCards(prevCards => [...prevCards, createdCard]);
 
-                    const updatedCardIds = Array.from(new Set([
-                        ...(whiteboard.cards || []).map(card => typeof card === 'string' ? card : card._id),
-                        createdCard._id
-                    ]));
-                    await updateWhiteboard(whiteboard._id, { cards: updatedCardIds });
+                
+                    await updateWhiteboard(whiteboard._id, { cards: [createdCard._id]  });
                 }
                 setContextMenu(null);
             } catch (err: any) {
