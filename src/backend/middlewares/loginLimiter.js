@@ -9,6 +9,9 @@ const loginLimiter = rateLimit({
     error: "登入嘗試過多，請 10 分鐘後再試。",
   },
   headers: true,
+  keyGenerator: (req, res) => {
+    return req.ip;
+  },
 });
 
 module.exports = loginLimiter;
