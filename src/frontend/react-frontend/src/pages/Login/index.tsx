@@ -7,7 +7,8 @@ import { updateUser, getUserByName } from '@/services/userService';
 import { authenticateUser } from "@/services/loginService";
 import { toast } from 'react-toastify';
 import { UserData } from '@/interfaces/User/UserData';
-import DOMPurify from "dompurify";
+
+
 
 const Login: React.FC = () => {
   const userNameRef = useRef<HTMLInputElement | null>(null);
@@ -19,8 +20,7 @@ const Login: React.FC = () => {
   // Add state to manage the disabled state of the login button
   const [isButtonDisabled, setIsButtonDisabled] = useState<boolean>(false);
 
-  // Use DOMPurify to sanitize input
-  const sanitizeInput = (input: string) => DOMPurify.sanitize(input);
+
 
   const login = async () => {
     // If the button is already disabled, prevent further execution
@@ -55,12 +55,9 @@ const Login: React.FC = () => {
         }
       };
 
-      // Fetch the user's input and sanitize it
-      const rawUserName = userNameRef.current?.value || null;
-      const rawUserPassword = userPasswordRef.current?.value || null;
-
-      const userName = rawUserName ? sanitizeInput(rawUserName) : null;
-      const userPassword = rawUserPassword ? sanitizeInput(rawUserPassword) : null;
+      // Get the input values from the
+      const userName = userNameRef.current?.value || null;
+      const userPassword = userPasswordRef.current?.value || null;
 
       // Validate the input fields
       validateInput(userName, "帳號");
@@ -107,8 +104,9 @@ const Login: React.FC = () => {
             } else {
               toast.error(<div>帳號或密碼錯誤，請重新輸入</div>);
             }
+          // If the user has tried to log in too many times
           } else {
-            toast.error(<div>未知錯誤，請稍後再試</div>);
+            toast.error(<div>嘗試登入太多次，請稍後再嘗試</div>);
           }
         } else {
           toast.error(
@@ -128,10 +126,10 @@ const Login: React.FC = () => {
           </div>,
         );
       } else {
-        console.error("發生未知錯誤");
+        console.error("嘗試登入太多次，請稍後再嘗試");
         toast.error(
           <div>
-            發生未知錯誤。
+            嘗試登入太多次，請稍後再嘗試。
           </div>,
         );
       }

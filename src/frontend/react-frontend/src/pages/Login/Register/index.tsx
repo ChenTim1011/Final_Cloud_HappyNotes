@@ -103,7 +103,7 @@ const Register: React.FC = () => {
             // Avoid Duplicated userName
             const users = await getUserByName(userName);
             if(users.length !== 0){
-                toast.error("此使用者已存在");
+                toast.error("帳號錯誤");
                 return;
             }
 

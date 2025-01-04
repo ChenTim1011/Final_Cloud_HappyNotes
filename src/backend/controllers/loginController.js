@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
+const { validationResult } = require("express-validator");
 
 // Function to dynamically load environment variables
 const loadEnvConfig = () => {
@@ -93,6 +94,12 @@ const generateRefreshToken = (userName) => {
 
 // /api/auth/login endpoint
 const GEN_TOKEN = async (req, res) => {
+  // Validate the request body
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { userName, password } = req.body;
 
   try {

@@ -83,7 +83,7 @@ const POST_CARD_WHITEBOARD_ID = async (req, res) => {
     // Create a new card
     const newCard = new Card({
       cardTitle,
-      content,
+      content: sanitizedContent,
       dueDate: dueDate || null,
       tag,
       foldOrNot: foldOrNot || false,
@@ -139,7 +139,7 @@ const PUT_CARD = async (req, res) => {
       id,
       {
         cardTitle,
-        content,
+        content: sanitizedContent,
         dueDate,
         tag,
         foldOrNot,
