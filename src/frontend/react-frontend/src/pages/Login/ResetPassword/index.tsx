@@ -100,7 +100,7 @@ const ResetPassword: React.FC = () => {
             // Check if the user exists
             const users = await getUserByName(userName);
             if (users.length === 0) {
-                toast.error("此用戶不存在");
+                toast.error("帳號或密碼錯誤");
                 return;
             }
 
@@ -256,7 +256,7 @@ const ResetPassword: React.FC = () => {
                 {/* Back to Login Button */}
                 <button
                     onClick={() => navigate("../../auth/login")}
-                    className="text-base text-[#A15C38] hover:text-[#262220] font-medium transition-colors mb-4"
+                    className=" text-base text-[#A15C38] hover:text-[#262220] font-medium transition-colors mb-4"
                 >
                     回登入畫面
                 </button>
@@ -273,7 +273,7 @@ const ResetPassword: React.FC = () => {
                         ResetPasswordHandler();
                     }}
                 >
-                    <div className="mb-6">
+                    <div className="mb-3">
                         <label
                             className="block text-base font-medium text-[#262220] mb-2"
                             htmlFor="userName"
@@ -293,7 +293,7 @@ const ResetPassword: React.FC = () => {
                         />
                         {userName && renderValidation(userNameValid, userNameValid ? "帳號有效（僅含英文和數字）" : "帳號無效（僅含英文和數字）")}
                     </div>
-                    <div className="mb-6">
+                    <div className="mb-3">
                         <label
                             htmlFor="password"
                             className="block text-base font-medium text-[#262220] mb-2"
@@ -320,7 +320,7 @@ const ResetPassword: React.FC = () => {
                             {renderValidation(passwordValid.number, "至少一個數字")}
                         </div>
                     </div>
-                    <div className="mb-6">
+                    <div className="mb-3">
                         <label
                             htmlFor="repassword"
                             className="block text-base font-medium text-[#262220] mb-2"
@@ -342,7 +342,7 @@ const ResetPassword: React.FC = () => {
                         />
                         {passwordAgain && renderValidation(isPasswordMatch, isPasswordMatch ? "密碼一致" : "密碼不一致")}
                     </div>
-                    <div className="mb-6">
+                    <div className="mb-3">
                         <label
                             htmlFor="email"
                             className="block text-base font-medium text-[#262220] mb-2"

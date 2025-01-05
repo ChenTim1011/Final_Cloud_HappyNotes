@@ -98,7 +98,7 @@ const Management: React.FC = () => {
                 // Pass userId to fetch only the user's whiteboards from the backend
                 const fetchedWhiteboards: WhiteboardData[] = await getAllWhiteboards(userId);
 
-                console.log("Fetched Whiteboards (Populated):", fetchedWhiteboards); // Check user whiteboard data
+                //console.log("Fetched Whiteboards (Populated):", fetchedWhiteboards); // Check user whiteboard data
 
                 setWhiteboards(fetchedWhiteboards);
 
@@ -198,7 +198,7 @@ const Management: React.FC = () => {
             return dateB.getTime() - dateA.getTime();
         });
 
-        console.log("Filtered Cards:", filtered); // Check filtered results
+        //console.log("Filtered Cards:", filtered); // Check filtered results
         setFilteredCards(filtered);
         setCurrentPage(1);
     }, [
@@ -361,7 +361,7 @@ const Management: React.FC = () => {
             } else if (whiteboards.length > 0) {
                 whiteboardId = whiteboards[0]._id;
             }
-            console.log("Selected Whiteboard ID:", whiteboardId);
+            //console.log("Selected Whiteboard ID:", whiteboardId);
             if (!whiteboardId) {
                 toast.error('請選擇一個白板');
                 throw new Error('沒有選擇的白板，且白板列表為空');
@@ -375,7 +375,7 @@ const Management: React.FC = () => {
                 ...newCardData,
                 content: sanitizedContent, 
             });
-            console.log("新建的卡片：", createdCard);
+            //console.log("新建的卡片：", createdCard);
 
             setCards(prevCards => [...prevCards, createdCard]);
 

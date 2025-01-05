@@ -36,7 +36,7 @@ export const updateConnection = async (
             await handleRequestError(response, 'Failed to update connection');
         }
 
-        console.log('Connection updated successfully');
+        //console.log('Connection updated successfully');
     } catch (error) {
         console.error('Error updating connection:', error);
         throw error;
@@ -47,7 +47,7 @@ export const updateConnection = async (
 
 
 export const deleteConnection = async (cardId: string, connectionId: string): Promise<void> => {
-    console.log('Sending DELETE request:', { cardId , connectionId});
+    //console.log('Sending DELETE request:', { cardId , connectionId});
     const url = `${API_BASE_URL}/${cardId}/${connectionId}`;
     try {
       const response = await fetch(url, {
@@ -62,7 +62,7 @@ export const deleteConnection = async (cardId: string, connectionId: string): Pr
         throw new Error('Failed to delete connection');
       }
   
-      console.log(`Connection ${connectionId} deleted successfully.`);
+      //console.log(`Connection ${connectionId} deleted successfully.`);
     } catch (error) {
       console.error('Error deleting connection:', error);
       throw error;
@@ -79,9 +79,7 @@ export const addConnection = async (cardId: string, newConnection: {
     //const updatedConnections = [...(cardData.connections || []), newConnection];
     const url = `${API_BASE_URL}/${cardId}/connections`;
 
-    // 打印 URL 和數據
-    //console.log("PPPP");
-   // console.log("Sending request to:", url);
+    // console.log("Sending request to:", url);
     //console.log("Request body:", newConnection);
     try {
         const response = await fetch(`${API_BASE_URL}/${cardId}/connections`, {
@@ -92,7 +90,7 @@ export const addConnection = async (cardId: string, newConnection: {
             body: JSON.stringify({ connections: [newConnection] }),
             //body: JSON.stringify({ connections: updatedConnections }),
         });
-        //console.log("RRResponse", response);
+        //console.log("Response", response);
 
         if (!response.ok) {
             await handleRequestError(response, 'Failed to add connection');

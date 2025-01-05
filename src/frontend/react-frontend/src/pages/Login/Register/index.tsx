@@ -218,7 +218,15 @@ const Register: React.FC = () => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-[#F7F1F0] to-[#C3A6A0]">
             <div className="w-[28rem] bg-white rounded-lg shadow-lg p-10 relative">
-                <h2 className="text-2xl font-semibold text-center text-[#262220] mb-6">
+                <button
+                    onClick={() => navigate("../../auth/login")}
+                    className="text-base text-[#A15C38] hover:text-[#262220] font-medium transition-colors mb-4"
+                >
+                    回登入畫面
+                </button>
+                
+                
+                <h2 className="text-3xl font-semibold text-center text-[#262220] mb-6">
                     註冊
                 </h2>
 
@@ -320,7 +328,7 @@ const Register: React.FC = () => {
                     </div>
                     <button
                         type="submit"
-                        className={`w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-2 text-sm rounded-lg transition-colors ${
+                        className={`w-full bg-[#A15C38] hover:bg-[#262220] text-white font-medium py-3 text-lg rounded-lg transition-colors ${
                             !userNameValid || !passwordValidState || !emailValid || !isPasswordMatch || isButtonDisabled
                                 ? "opacity-50 cursor-not-allowed"
                                 : ""
@@ -331,14 +339,7 @@ const Register: React.FC = () => {
                     </button>
                 </form>
                 
-                <div className="flex justify-center mt-4">
-                    <button
-                        onClick={() => navigate("../../auth/login")}
-                        className="text-sm text-[#A15C38] hover:text-[#262220] font-medium transition-colors"
-                    >
-                        回登入畫面
-                    </button>
-                </div>
+
             </div>
             
             {showVerification && tempUserData && (

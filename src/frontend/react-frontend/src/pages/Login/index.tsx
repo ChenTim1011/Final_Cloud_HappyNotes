@@ -87,7 +87,7 @@ const Login: React.FC = () => {
         // Navigate to the user's map page
         navigate(`../../map/${auth.userName}`);
       } catch (error: any) {
-        console.log(error);
+        //console.log(error);
         if (error.response && error.response.data) {
           const { error: errorMessage, failedLoginAttempts } = error.response.data;
 

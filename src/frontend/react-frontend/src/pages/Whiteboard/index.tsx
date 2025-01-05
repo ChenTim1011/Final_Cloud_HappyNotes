@@ -133,7 +133,7 @@ const Whiteboard: React.FC = () => {
 
             try {
                 const createdCard = await createCard(newCardData);
-                console.log("Created Card:", createdCard);
+                //console.log("Created Card:", createdCard);
 
                 if (createdCard._id) {
                     setCards(prevCards => [...prevCards, createdCard]);
@@ -308,7 +308,6 @@ const Whiteboard: React.FC = () => {
         cardId: string,
         startPoint: { x: number; y: number }
     ) => {
-        //console.log("SSSSSSSSSS", { cardId, startPoint });
         if (!startPoint) {
             console.error('Start point is undefined');
             return;
@@ -366,7 +365,7 @@ const Whiteboard: React.FC = () => {
                 >
                     {/* Card Rendering Section */}
                     {cards.map((card) => {
-                        //console.log("CCCCCCCCCCCCCCCCCCCconnections:", connections)
+                        //console.log("Connections:", connections)
                         const relatedConnections = connections
                             .filter((connection) => connection.startCardId === card._id)
                             .map(({ id,text ,startOffset, endPoint }) => ({
@@ -375,7 +374,7 @@ const Whiteboard: React.FC = () => {
                                 startOffset,
                                 endPoint,
                                 text,
-                            })); // 移除 startCardId
+                            })); 
                         //console.log("relatedConnections:", relatedConnections)
                         return (
 

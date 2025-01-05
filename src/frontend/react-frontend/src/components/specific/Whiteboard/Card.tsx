@@ -411,7 +411,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
     const { startPoint, endPoint } = activeConnection;
 
-    // 创建新连接对象
+    // Create a new connection object
     const newConnection = {
       id: uuidv4(),
       startCardId: _id,
@@ -423,17 +423,17 @@ const Card: React.FC<CardProps> = React.memo(({
     };
 
     try {
-      // 将连接保存到后端
+      // Save the new connection to the backend
       await addConnection(_id, newConnection);
       setLocalConnections((prevConnections) => [...prevConnections, newConnection]);
 
-      console.log("Connection saved:", newConnection);
+      //console.log("Connection saved:", newConnection);
     } catch (error) {
       console.error("Failed to save connection:", error);
       toast.error("無法保存連線");
     }
 
-    // 清空 activeConnection 状态
+    // Clear active connection
     setActiveConnection(null);
   };
   useEffect(() => {
@@ -518,7 +518,7 @@ const Card: React.FC<CardProps> = React.memo(({
 
     try {
       // 調用後端刪除連線 API
-      //console.log("MKMKMKKhandleDeleteConnection:",_id, selectedConnectionId)
+      //console.log("handleDeleteConnection:",_id, selectedConnectionId)
       await deleteConnection(_id, selectedConnectionId);
 
       setLocalConnections((prevConnections) =>
@@ -528,7 +528,7 @@ const Card: React.FC<CardProps> = React.memo(({
       // 更新本地 connections 狀態
       // 清除選中狀態
       setSelectedConnectionId(null);
-      console.log(`Connection ${selectedConnectionId} deleted.`);
+      //console.log(`Connection ${selectedConnectionId} deleted.`);
     } catch (error) {
       console.error(`Failed to delete connection: ${selectedConnectionId}`, error);
       alert('Failed to delete connection.');
@@ -664,7 +664,7 @@ const Card: React.FC<CardProps> = React.memo(({
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        console.log('Card copied:', _id);
+        //console.log('Card copied:', _id);
       }
     }
 
@@ -1123,6 +1123,7 @@ const Card: React.FC<CardProps> = React.memo(({
                   onChange={(e) => setEditedTitle(e.target.value)}
                   className="w-full px-3 py-2 border border-[#C3A6A0] rounded text-[#262220] focus:outline-none focus:ring-2 focus:ring-[#A15C38]"
                   placeholder="輸入卡片標題"
+                  title="卡片標題"
                 />
 
                 <button

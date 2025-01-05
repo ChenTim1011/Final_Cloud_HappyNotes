@@ -34,18 +34,15 @@ export const BatchUpdateProvider: React.FC<BatchUpdateProviderProps> = ({ childr
 
    
     const retryProcessBatch = useCallback(() => {
-        console.log('Retrying batch processing...');
         processBatch();
     }, []);
 
     
     const processBatch = useCallback(async () => {
         if (updatesRef.current.size === 0 || isProcessingRef.current) {
-            console.log('No updates to process or already processing.');
             return;
         }
 
-        console.log('Processing batch updates:', updatesRef.current);
         isProcessingRef.current = true;
 
         // Convert Map to array of updates
@@ -60,7 +57,7 @@ export const BatchUpdateProvider: React.FC<BatchUpdateProviderProps> = ({ childr
             // Batch updates in chunks of MAX_BATCH_SIZE
             for (let i = 0; i < updatesToSend.length; i += MAX_BATCH_SIZE) {
                 const batch = updatesToSend.slice(i, i + MAX_BATCH_SIZE);
-                console.log('Sending batch:', batch);
+                
 
                 
                 await patchCardsBatch(batch);
@@ -70,7 +67,7 @@ export const BatchUpdateProvider: React.FC<BatchUpdateProviderProps> = ({ childr
             await refreshCards();
 
             
-            toast.success('批次更新成功！');
+            //toast.success('批次更新成功！');
 
             // Reset retry count and backoff time
             retryCountRef.current = 0;
@@ -136,8 +133,6 @@ export const BatchUpdateProvider: React.FC<BatchUpdateProviderProps> = ({ childr
             return;
         }
 
-        console.log(`Adding content update: ID=${id}, Changes=`, changes);
-
         // Use Map to store updates
         setCards(prevCards =>
             prevCards.map(card =>
@@ -163,7 +158,6 @@ export const BatchUpdateProvider: React.FC<BatchUpdateProviderProps> = ({ childr
             clearTimeout(timerRef.current);
         }
 
-        console.log('Setting batch interval timer.');
         timerRef.current = setTimeout(() => {
             processBatch();
             timerRef.current = null;
@@ -174,7 +168,6 @@ export const BatchUpdateProvider: React.FC<BatchUpdateProviderProps> = ({ childr
     useEffect(() => {
         const handleBeforeUnload = () => {
             if (updatesRef.current.size > 0) {
-                console.log('Before unload: processing remaining batch updates.');
                 processBatch();
             }
         };
