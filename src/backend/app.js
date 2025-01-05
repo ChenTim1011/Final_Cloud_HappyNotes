@@ -52,11 +52,6 @@ app.use(
   })
 );
 
-app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err.stack);
-  res.status(500).json({ error: "Internal Server Error" });
-});
-
 // Body parser middleware
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
@@ -90,6 +85,11 @@ app.use("/api/whiteboards", whiteboardRoutes);
 app.use("/api/cards", cardRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", loginRoutes);
+
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err.stack);
+  res.status(500).json({ error: "Internal Server Error" });
+});
 
 // Start the server
 const PORT = 3000;
